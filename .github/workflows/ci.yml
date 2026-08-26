@@ -21,6 +21,5 @@ jobs:
         uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
-          version-file: ".python-version"
       - name: Run prek
         run: uvx prek run --all-files
