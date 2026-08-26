@@ -83,6 +83,7 @@ DJANGO_APPS = [
     # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
     "django.forms",
+    "django.contrib.postgres",
 ]
 THIRD_PARTY_APPS = [
     "crispy_forms",
@@ -91,10 +92,22 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.mfa",
     "allauth.socialaccount",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "wagtail",
+    "modelcluster",
+    "taggit",
 ]
 
 LOCAL_APPS = [
     "tickfeeddmr.users",
+    "tickfeeddmr.core",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -293,6 +306,19 @@ ACCOUNT_FORMS = {"signup": "tickfeeddmr.users.forms.UserSignupForm"}
 SOCIALACCOUNT_ADAPTER = "tickfeeddmr.users.adapters.SocialAccountAdapter"
 # https://docs.allauth.org/en/latest/socialaccount/configuration.html
 SOCIALACCOUNT_FORMS = {"signup": "tickfeeddmr.users.forms.UserSocialSignupForm"}
+
+# WAGTAIL
+# ------------------------------------------------------------------------------
+WAGTAIL_SITE_NAME = "TickFeedDmr"
+WAGTAILADMIN_BASE_URL = env.str(
+    "WAGTAIL_ADMIN_BASE_URL",
+    default="http://localhost:8000",
+)
+WAGTAIL_ADMIN_URL = "cms/admin/"
+
+# Docs
+# ------------------------------------------------------------------------------
+WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx"]
 
 
 # Your stuff...

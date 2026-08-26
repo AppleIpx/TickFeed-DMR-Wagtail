@@ -31,6 +31,7 @@ dependencies = [
   "redis==8.1.0",
   "uvicorn[standard]==0.52.3",
   "uvicorn-worker==0.4.0",
+  "wagtail==8.0",
   "whitenoise==6.12.0",
 ]
 

@@ -4,9 +4,13 @@ from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django.views import defaults as default_views
+from wagtail.admin import urls as wagtailadmin_urls
+from wagtail.documents import urls as wagtaildocs_urls
 
 urlpatterns = [
-    path(settings.ADMIN_URL, admin.site.urls),
+    path(f"api/{settings.WAGTAIL_ADMIN_URL}", include(wagtailadmin_urls)),
+    path("documents/", include(wagtaildocs_urls)),
+    path(f"api/{settings.ADMIN_URL}", admin.site.urls),
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
 if settings.DEBUG:
