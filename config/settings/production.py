@@ -1,9 +1,6 @@
 # ruff: noqa: E501
 from .base import *  # noqa: F403
-from .base import DATABASES
-from .base import INSTALLED_APPS
-from .base import REDIS_URL
-from .base import env
+from .base import DATABASES, INSTALLED_APPS, REDIS_URL, env
 
 # GENERAL
 # ------------------------------------------------------------------------------
