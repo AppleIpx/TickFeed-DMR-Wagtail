@@ -1,7 +1,7 @@
 volumes:
   tickfeeddmr_local_postgres_data: {}
   tickfeeddmr_local_postgres_data_backups: {}
-  
+
 
 services:
   django:
@@ -16,10 +16,8 @@ services:
       - /app/.venv
       - .:/app:z
     env_file:
-      - path: ./.envs/.local/.django
-        required: false
-      - path: ./.envs/.local/.postgres
-        required: false
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
     ports:
       - '8000:8000'
     command: /start
@@ -34,5 +32,4 @@ services:
       - tickfeeddmr_local_postgres_data:/var/lib/postgresql/18/docker
       - tickfeeddmr_local_postgres_data_backups:/backups
     env_file:
-      - path: ./.envs/.local/.postgres
-        required: false
+      - ./.envs/.local/.postgres

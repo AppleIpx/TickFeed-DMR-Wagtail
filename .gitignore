@@ -331,3 +331,7 @@ tickfeeddmr/media/
 .env
 .envs/*
 !.envs/.local/
+
+graphify-out
+CLAUDE.md
+.claude
