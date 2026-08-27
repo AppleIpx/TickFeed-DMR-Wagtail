@@ -1906,6 +1906,7 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "uvicorn-worker" },
     { name = "wagtail" },
+    { name = "wagtail-modeladmin" },
     { name = "whitenoise" },
 ]
 
@@ -1954,6 +1955,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], specifier = "==0.52.3" },
     { name = "uvicorn-worker", specifier = "==0.4.0" },
     { name = "wagtail", specifier = "==8.0" },
+    { name = "wagtail-modeladmin", specifier = ">=2.4.0" },
     { name = "whitenoise", specifier = "==6.12.0" },
 ]
 
@@ -2133,6 +2135,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/01/ef/d600737c0687fca22ef14b905bd37f72e264b03be03318ae3157466a09b8/wagtail-8.0.tar.gz", hash = "sha256:8fb2aa39bb8ff9e7709ba848a1bba2fea332ce32368c7ba4820008c0cfcc0019", size = 7131769, upload-time = "2026-08-25T12:37:38.568Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/a5/59476b1fa6151a0dcb2cb65bf724b8b8ca11a03f94327262bc3339e0b01e/wagtail-8.0-py3-none-any.whl", hash = "sha256:34dde727917ace7e4ab182054f78f01c2cc24d85ccc402932d3d5c6315a7cd00", size = 9835863, upload-time = "2026-08-25T12:37:31.063Z" },
+]
+
+[[package]]
+name = "wagtail-modeladmin"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wagtail" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/fc/572d102ffddbb1cdc8ee57f89e110999979dcfb19346dea4270591f87a59/wagtail_modeladmin-2.4.0.tar.gz", hash = "sha256:11b051e4595242cec5f71b9e30acf1ca6b08809d27e3fa148d7f8e77cf60d9fe", size = 141163, upload-time = "2026-06-07T11:37:08.604Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b1/bc/564c02172c3ee1717ebb69b8565f1cacadd59914a5c4b330741a9a9b9705/wagtail_modeladmin-2.4.0-py3-none-any.whl", hash = "sha256:3ddf8d099c402610ac9a5d668c72a0743463395316b23abcb4f9fbf2ddd2984f", size = 265759, upload-time = "2026-06-07T11:37:07.152Z" },
 ]
 
 [[package]]

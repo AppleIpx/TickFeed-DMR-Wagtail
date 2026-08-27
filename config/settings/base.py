@@ -101,6 +101,7 @@ THIRD_PARTY_APPS = [
     "wagtail.search",
     "wagtail.admin",
     "wagtail",
+    "wagtail_modeladmin",
     "modelcluster",
     "taggit",
 ]
@@ -108,6 +109,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "tickfeeddmr.users",
     "tickfeeddmr.core",
+    "tickfeeddmr.market_data",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
