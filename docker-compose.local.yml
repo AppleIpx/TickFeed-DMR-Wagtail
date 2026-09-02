@@ -1,6 +1,7 @@
 volumes:
   tickfeeddmr_local_postgres_data: {}
   tickfeeddmr_local_postgres_data_backups: {}
+  tickfeeddmr_local_redis_data: {}
 
 
 services:
@@ -21,6 +22,12 @@ services:
     ports:
       - '8000:8000'
     command: /start
+    healthcheck:
+      test: ['CMD', 'python', 'manage.py', 'migrate', '--check']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   postgres:
     build:
@@ -33,3 +40,47 @@ services:
       - tickfeeddmr_local_postgres_data_backups:/backups
     env_file:
       - ./.envs/.local/.postgres
+
+  redis:
+    image: docker.io/redis:7.2
+    container_name: tickfeeddmr_local_redis
+    volumes:
+      - tickfeeddmr_local_redis_data:/data
+
+  binance_stream:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: tickfeeddmr_local_django
+    container_name: tickfeeddmr_local_binance_stream
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - /app/.venv
+      - .:/app:z
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    command: python manage.py stream_binance
+
+  market_data_consumer:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: tickfeeddmr_local_django
+    container_name: tickfeeddmr_local_market_data_consumer
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - /app/.venv
+      - .:/app:z
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    command: python manage.py consume_market_data_stream

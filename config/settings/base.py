@@ -288,6 +288,37 @@ LOGGING = {
 REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 
+# MARKET DATA
+# ------------------------------------------------------------------------------
+# Binance REST/WebSocket endpoints used by `tickfeeddmr.market_data.providers.binance`.
+BINANCE_REST_BASE_URL = env("BINANCE_REST_BASE_URL", default="https://api.binance.com")
+BINANCE_WS_BASE_URL = env(
+    "BINANCE_WS_BASE_URL",
+    default="wss://stream.binance.com:9443",
+)
+# Redis Stream that `stream_binance` publishes trade events to, and that
+# `consume_market_data_stream` reads from via a consumer group.
+MARKET_DATA_TRADE_STREAM_KEY = env(
+    "MARKET_DATA_TRADE_STREAM_KEY",
+    default="market_data:trades:binance",
+)
+MARKET_DATA_TRADE_CONSUMER_GROUP = env(
+    "MARKET_DATA_TRADE_CONSUMER_GROUP",
+    default="market_data_ingest",
+)
+# `consume_market_data_stream` tuning: consumer identity within the group,
+# how many stream entries to pull per `XREADGROUP`, and how long to block
+# waiting for new ones.
+MARKET_DATA_TRADE_CONSUMER_NAME = env(
+    "MARKET_DATA_TRADE_CONSUMER_NAME",
+    default="consumer-1",
+)
+MARKET_DATA_TRADE_READ_COUNT = env.int("MARKET_DATA_TRADE_READ_COUNT", default=100)
+MARKET_DATA_TRADE_READ_BLOCK_MS = env.int(
+    "MARKET_DATA_TRADE_READ_BLOCK_MS",
+    default=5000,
+)
+
 
 # django-allauth
 # ------------------------------------------------------------------------------
