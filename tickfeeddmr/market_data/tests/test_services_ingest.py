@@ -22,7 +22,7 @@ from tickfeeddmr.market_data.services.ingest import CryptoTradeIngestService
 if TYPE_CHECKING:
     from tickfeeddmr.market_data.models import CryptoAsset
 
-pytestmark = pytest.mark.django_db
+pytestmark = pytest.mark.django_db(transaction=True)
 
 
 def _event(trading_pair: str, *, trade_id: str) -> TradeEvent:
@@ -36,23 +36,23 @@ def _event(trading_pair: str, *, trade_id: str) -> TradeEvent:
     )
 
 
-def test_write_snapshots_resolves_known_pair_and_bulk_creates(
+async def test_write_snapshots_resolves_known_pair_and_bulk_creates(
     crypto_asset: CryptoAsset,
 ) -> None:
     service = CryptoTradeIngestService(exchange=crypto_asset.exchange)
     event = _event(crypto_asset.trading_pair, trade_id="1")
 
-    written = service.write_snapshots([event])
+    written = await service.write_snapshots([event])
 
     assert written == 1
-    snapshot = CryptoPriceSnapshot.objects.get()
+    snapshot = await CryptoPriceSnapshot.objects.aget()
     assert snapshot.asset_id == crypto_asset.id
     assert snapshot.price == event.price
     assert snapshot.volume == event.volume
     assert snapshot.timestamp == event.timestamp
 
 
-def test_write_snapshots_skips_unknown_trading_pair(
+async def test_write_snapshots_skips_unknown_trading_pair(
     crypto_asset: CryptoAsset,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -60,14 +60,14 @@ def test_write_snapshots_skips_unknown_trading_pair(
     event = _event("UNKNOWNPAIR", trade_id="1")
 
     with caplog.at_level(logging.ERROR):
-        written = service.write_snapshots([event])
+        written = await service.write_snapshots([event])
 
     assert written == 0
-    assert not CryptoPriceSnapshot.objects.exists()
+    assert not await CryptoPriceSnapshot.objects.aexists()
     assert any("UNKNOWNPAIR" in record.message for record in caplog.records)
 
 
-def test_write_snapshots_persists_only_known_pairs_from_mixed_batch(
+async def test_write_snapshots_persists_only_known_pairs_from_mixed_batch(
     crypto_asset: CryptoAsset,
 ) -> None:
     service = CryptoTradeIngestService(exchange=crypto_asset.exchange)
@@ -76,13 +76,13 @@ def test_write_snapshots_persists_only_known_pairs_from_mixed_batch(
         _event("UNKNOWNPAIR", trade_id="2"),
     ]
 
-    written = service.write_snapshots(events)
+    written = await service.write_snapshots(events)
 
     assert written == 1
-    assert CryptoPriceSnapshot.objects.count() == 1
+    assert await CryptoPriceSnapshot.objects.acount() == 1
 
 
-def test_write_snapshots_scopes_resolution_by_exchange(
+async def test_write_snapshots_scopes_resolution_by_exchange(
     crypto_asset: CryptoAsset,
 ) -> None:
     # trading_pair существует, но у другой биржи -> для этого exchange он неизвестен.
@@ -91,13 +91,13 @@ def test_write_snapshots_scopes_resolution_by_exchange(
     service = CryptoTradeIngestService(exchange=other_exchange)
     event = _event(crypto_asset.trading_pair, trade_id="1")
 
-    written = service.write_snapshots([event])
+    written = await service.write_snapshots([event])
 
     assert written == 0
-    assert not CryptoPriceSnapshot.objects.exists()
+    assert not await CryptoPriceSnapshot.objects.aexists()
 
 
-def test_write_snapshots_empty_list_returns_zero_without_querying() -> None:
-    written = CryptoTradeIngestService(exchange="BINANCE").write_snapshots([])
+async def test_write_snapshots_empty_list_returns_zero_without_querying() -> None:
+    written = await CryptoTradeIngestService(exchange="BINANCE").write_snapshots([])
 
     assert written == 0

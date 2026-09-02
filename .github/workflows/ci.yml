@@ -23,3 +23,24 @@ jobs:
           enable-cache: true
       - name: Run prek
         run: uvx prek run --all-files
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+      - name: Reset any leftover test containers
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
+      - name: Build test containers
+        run: docker compose -f docker-compose.test.yml build
+      - name: Start test containers
+        run: docker compose -f docker-compose.test.yml up -d
+      - name: Wait for containers to settle
+        run: sleep 10
+      - name: Show container status
+        run: docker compose -f docker-compose.test.yml ps
+      - name: Run pytest
+        run: docker compose -f docker-compose.test.yml run --rm django pytest
+      - name: Tear down test containers
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
