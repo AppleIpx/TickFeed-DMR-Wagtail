@@ -158,7 +158,7 @@ async def test_recover_pending_is_a_no_op_when_pel_is_empty(
     assert pending_summary["pending"] == 0
 
 
-async def test_recover_pending_paginates_over_read_count_sized_batches(
+async def test_recover_pending_paginates_over_read_count_sized_batches(  # noqa: PLR0913, PLR0917
     settings: Settings,
     redis_client: Redis,
     stream_key: str,
