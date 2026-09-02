@@ -1,0 +1,38 @@
+name: tickfeeddmr_test
+
+volumes:
+  tickfeeddmr_test_postgres_data: {}
+
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: tickfeeddmr_test_django
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: tickfeeddmr_test_postgres
+    volumes:
+      - tickfeeddmr_test_postgres_data:/var/lib/postgresql/18/docker
+    env_file:
+      - ./.envs/.local/.postgres
+
+  redis:
+    image: docker.io/redis:7.2
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
