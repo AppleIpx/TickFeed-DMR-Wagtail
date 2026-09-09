@@ -6,7 +6,7 @@ volumes:
 
 
 services:
-  django:
+  django: &django
     build:
       context: .
       dockerfile: ./compose/production/django/Dockerfile
@@ -43,33 +43,49 @@ services:
     image: docker.io/redis:7.2
 
   binance_stream:
-    build:
-      context: .
-      dockerfile: ./compose/production/django/Dockerfile
-    image: tickfeeddmr_production_django
+    <<: *django
+    image: tickfeeddmr_production_binance_stream
+    volumes: []
     depends_on:
       django:
         condition: service_healthy
       redis:
         condition: service_started
-    env_file:
-      - ./.envs/.production/.django
-      - ./.envs/.production/.postgres
     command: python manage.py stream_binance
     restart: unless-stopped
 
   market_data_consumer:
-    build:
-      context: .
-      dockerfile: ./compose/production/django/Dockerfile
-    image: tickfeeddmr_production_django
+    <<: *django
+    image: tickfeeddmr_production_market_data_consumer
+    volumes: []
     depends_on:
       django:
         condition: service_healthy
       redis:
         condition: service_started
-    env_file:
-      - ./.envs/.production/.django
-      - ./.envs/.production/.postgres
     command: python manage.py consume_market_data_stream
+    restart: unless-stopped
+
+  celeryworker:
+    <<: *django
+    image: tickfeeddmr_production_celeryworker
+    volumes: []
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: /start-celeryworker
+    restart: unless-stopped
+
+  celerybeat:
+    <<: *django
+    image: tickfeeddmr_production_celerybeat
+    volumes: []
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: /start-celerybeat
     restart: unless-stopped

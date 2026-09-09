@@ -5,7 +5,7 @@ volumes:
 
 
 services:
-  django:
+  django: &django
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
@@ -48,39 +48,47 @@ services:
       - tickfeeddmr_local_redis_data:/data
 
   binance_stream:
-    build:
-      context: .
-      dockerfile: ./compose/local/django/Dockerfile
-    image: tickfeeddmr_local_django
+    <<: *django
+    image: tickfeeddmr_local_binance_stream
     container_name: tickfeeddmr_local_binance_stream
     depends_on:
       django:
         condition: service_healthy
       redis:
         condition: service_started
-    volumes:
-      - /app/.venv
-      - .:/app:z
-    env_file:
-      - ./.envs/.local/.django
-      - ./.envs/.local/.postgres
     command: python manage.py stream_binance
 
   market_data_consumer:
-    build:
-      context: .
-      dockerfile: ./compose/local/django/Dockerfile
-    image: tickfeeddmr_local_django
+    <<: *django
+    image: tickfeeddmr_local_market_data_consumer
     container_name: tickfeeddmr_local_market_data_consumer
     depends_on:
       django:
         condition: service_healthy
       redis:
         condition: service_started
-    volumes:
-      - /app/.venv
-      - .:/app:z
-    env_file:
-      - ./.envs/.local/.django
-      - ./.envs/.local/.postgres
     command: python manage.py consume_market_data_stream
+
+  celeryworker:
+    <<: *django
+    image: tickfeeddmr_local_celeryworker
+    container_name: tickfeeddmr_local_celeryworker
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports: []
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: tickfeeddmr_local_celerybeat
+    container_name: tickfeeddmr_local_celerybeat
+    depends_on:
+      django:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports: []
+    command: /start-celerybeat

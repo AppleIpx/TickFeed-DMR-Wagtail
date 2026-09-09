@@ -97,9 +97,7 @@ class BinanceRestClient:
     def _raise_for_status(response: httpx.Response) -> None:
         if response.is_error:
             logger.error(
-                "Binance REST error %s: %s",
-                response.status_code,
-                response.text,
+                f"Ошибка Binance REST {response.status_code}: {response.text}",
             )
             msg = f"Binance REST request failed with status {response.status_code}"
             raise ProviderResponseError(msg)

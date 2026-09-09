@@ -56,9 +56,8 @@ class BinanceTradeStreamConsumer:
             try:
                 async with websockets.connect(self.stream_url) as connection:
                     logger.info(
-                        "Connected to Binance trade stream (pairs=%s, attempt=%d)",
-                        self._trading_pairs,
-                        attempt,
+                        f"Подключение к Binance trade stream установлено "
+                        f"(пары={self._trading_pairs}, попытка={attempt})",
                     )
                     attempt = 0
                     backoff = INITIAL_BACKOFF_SECONDS
@@ -68,10 +67,8 @@ class BinanceTradeStreamConsumer:
                             yield event
             except (ConnectionClosed, OSError, json.JSONDecodeError) as exc:
                 logger.warning(
-                    "Binance stream disconnected (attempt=%d, reconnect in %.1fs): %s",
-                    attempt,
-                    backoff,
-                    exc,
+                    f"Соединение с Binance stream разорвано "
+                    f"(попытка={attempt}, переподключение через {backoff:.1f}с): {exc}",
                 )
 
             await asyncio.sleep(backoff)
@@ -82,7 +79,9 @@ class BinanceTradeStreamConsumer:
         envelope = json.loads(raw_message)
         payload = envelope.get("data")
         if payload is None or payload.get("e") != STREAM_EVENT_TYPE:
-            logger.warning("Unexpected Binance stream payload, skipping: %s", envelope)
+            logger.warning(
+                f"Неожиданный формат сообщения Binance stream, пропускаем: {envelope}",
+            )
             return None
         try:
             return TradeEvent(
@@ -100,5 +99,5 @@ class BinanceTradeStreamConsumer:
             # сообщение, соединение остаётся открытым, счётчик переподключений
             # не растёт. Раньше KeyError/decimal.InvalidOperation отсюда
             # улетали наружу и валили весь процесс (см. stream_binance_flow.md).
-            logger.exception("Malformed aggTrade payload, skipping: %s", envelope)
+            logger.exception(f"Битый payload aggTrade, пропускаем: {envelope}")
             return None

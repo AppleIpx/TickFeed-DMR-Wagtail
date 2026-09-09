@@ -14,10 +14,12 @@ classifiers = [
 ]
 dependencies = [
   "argon2-cffi==25.1.0",
+  "celery==5.6.3",
   "crispy-bootstrap5==2026.3",
   "django==6.0.8",
   "django-allauth[mfa]==65.19.1",
   "django-anymail==15.1",
+  "django-celery-beat==2.9.0",
   "django-crispy-forms==2.7",
   "django-environ==0.14.0",
   "django-model-utils==5.0.0",
@@ -136,6 +138,10 @@ lint.select = [
   "YTT",
 ]
 lint.ignore = [
+  "G004",   # Logging statement uses f-string — user's explicit decision (stage 3
+  # of the Celery/MOEX/CBR rollout), not an architectural default; see
+  # the "Celery" section in CLAUDE.md
+
   "RUF001", # String contains ambiguous unicode character
   "RUF002", # Docstring contains ambiguous unicode character
   "RUF003", # Comment contains ambiguous unicode character
