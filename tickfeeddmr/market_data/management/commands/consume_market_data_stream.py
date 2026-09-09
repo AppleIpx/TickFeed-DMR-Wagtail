@@ -78,9 +78,8 @@ class Command(BaseCommand):
             if GROUP_ALREADY_EXISTS not in str(exc):
                 raise
             logger.info(
-                "Consumer group %s already exists on stream %s",
-                settings.MARKET_DATA_TRADE_CONSUMER_GROUP,
-                settings.MARKET_DATA_TRADE_STREAM_KEY,
+                f"Группа консьюмеров {settings.MARKET_DATA_TRADE_CONSUMER_GROUP} "
+                f"уже существует на стриме {settings.MARKET_DATA_TRADE_STREAM_KEY}",
             )
 
     async def _recover_pending(
@@ -108,8 +107,8 @@ class Command(BaseCommand):
             if not _has_messages(response):
                 return
             logger.info(
-                "Recovering %d pending trade event(s) from a previous run",
-                _count_messages(response),
+                f"Восстанавливаем {_count_messages(response)} необработанных "
+                f"сделок с прошлого запуска",
             )
             await self._process_batch(redis_client, ingest, response)
 
@@ -128,8 +127,7 @@ class Command(BaseCommand):
                     events.append(deserialize_trade_event(fields))
                 except MALFORMED_TRADE_EVENT_ERRORS:
                     logger.exception(
-                        "Malformed trade event in stream, skipping id=%s",
-                        message_id,
+                        f"Битая запись сделки в стриме, пропускаем id={message_id}",
                     )
 
             try:
@@ -137,13 +135,16 @@ class Command(BaseCommand):
                 # произойдёт ниже, чтобы одна плохая запись не блокировала стрим.
                 written = await ingest.write_snapshots(events)
             except Exception:
-                logger.exception("Failed to write CryptoPriceSnapshot batch")
+                logger.exception("Не удалось записать пачку CryptoPriceSnapshot")
             else:
-                logger.debug(
-                    "Wrote %d CryptoPriceSnapshot rows from %d messages",
-                    written,
-                    len(messages),
-                )
+                # Хот-путь: вызывается на каждую обработанную пачку. f-строка
+                # собирается всегда, даже когда DEBUG не пишется (root на INFO) —
+                # явная проверка нужна, см. конвенцию логирования в CLAUDE.md.
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        f"Записано {written} строк CryptoPriceSnapshot "
+                        f"из {len(messages)} сообщений",
+                    )
 
             if message_ids:
                 await redis_client.xack(

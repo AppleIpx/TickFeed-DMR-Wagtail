@@ -223,7 +223,7 @@ async def test_recover_pending_skips_malformed_message_but_still_acks_it(
         await command._recover_pending(redis_client, ingest)  # noqa: SLF001
 
     spy.assert_called_once_with([])
-    assert any("Malformed trade event" in r.message for r in caplog.records)
+    assert any("Битая запись сделки в стриме" in r.message for r in caplog.records)
 
     pending_summary = await redis_client.xpending(stream_key, group_name)
     assert pending_summary["pending"] == 0

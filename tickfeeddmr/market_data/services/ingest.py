@@ -42,9 +42,8 @@ class CryptoTradeIngestService:
             asset = assets_by_pair.get(event.trading_pair)
             if asset is None:
                 logger.error(
-                    "No CryptoAsset for exchange=%s trading_pair=%s, skipping event",
-                    self._exchange,
-                    event.trading_pair,
+                    f"Нет CryptoAsset для exchange={self._exchange} "
+                    f"trading_pair={event.trading_pair}, пропускаем событие",
                 )
                 continue
             snapshots.append(

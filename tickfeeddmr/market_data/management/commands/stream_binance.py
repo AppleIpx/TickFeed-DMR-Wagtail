@@ -23,8 +23,7 @@ class Command(BaseCommand):
         trading_pairs = await self._active_trading_pairs()
         if not trading_pairs:
             logger.warning(
-                "No active CryptoAsset rows for exchange=%s, nothing to stream",
-                EXCHANGE,
+                f"Нет активных CryptoAsset для exchange={EXCHANGE}, стримить нечего",
             )
             return
 

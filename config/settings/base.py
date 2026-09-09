@@ -104,6 +104,7 @@ THIRD_PARTY_APPS = [
     "wagtail_modeladmin",
     "modelcluster",
     "taggit",
+    "django_celery_beat",
 ]
 
 LOCAL_APPS = [
@@ -287,6 +288,16 @@ LOGGING = {
 
 REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
 REDIS_SSL = REDIS_URL.startswith("rediss://")
+
+# CELERY
+# ------------------------------------------------------------------------------
+# https://docs.celeryq.dev/en/stable/userguide/configuration.html
+# Отдельная БД брокера (db 1), НЕ db 0 из REDIS_URL — там живут стримы
+# `market_data:trades:*`, очередь Celery в них подмешивать нельзя.
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/1")
+CELERY_RESULT_BACKEND = None
+CELERY_TIMEZONE = "Europe/Moscow"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # MARKET DATA
 # ------------------------------------------------------------------------------

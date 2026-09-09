@@ -154,7 +154,7 @@ async def test_stream_skips_unexpected_payload_and_logs_warning(
     assert event.trading_pair == "BTCUSDT"
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     unexpected_payload_warnings = sum(
-        "Unexpected Binance stream payload" in message for message in warnings
+        "Неожиданный формат сообщения Binance stream" in message for message in warnings
     )
     assert unexpected_payload_warnings == EXPECTED_BAD_PAYLOAD_COUNT
 
@@ -214,7 +214,7 @@ async def test_stream_skips_malformed_agg_trade_fields_without_reconnecting(
 
     errors = [r.message for r in caplog.records if r.levelno == logging.ERROR]
     malformed_payload_errors = sum(
-        "Malformed aggTrade payload" in message for message in errors
+        "Битый payload aggTrade" in message for message in errors
     )
     assert malformed_payload_errors == EXPECTED_BAD_PAYLOAD_COUNT
 
@@ -259,10 +259,10 @@ async def test_stream_reconnects_after_abnormal_disconnect_and_logs(
     assert connection_count == EXPECTED_CONNECTION_COUNT
 
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
-    assert any("disconnected" in message for message in warnings)
+    assert any("разорвано" in message for message in warnings)
 
     infos = [r.message for r in caplog.records if r.levelno == logging.INFO]
     connected_infos = sum(
-        "Connected to Binance trade stream" in message for message in infos
+        "Подключение к Binance trade stream установлено" in message for message in infos
     )
     assert connected_infos == EXPECTED_CONNECTION_COUNT
