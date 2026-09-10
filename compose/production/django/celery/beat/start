@@ -4,5 +4,10 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+# См. compose/local/django/celery/beat/start — тот же гейт на случай
+# гонки исходящей сети при холодном старте.
+wait-for-it 1.1.1.1:443 -t 120
+
+>&2 echo 'Исходящая сеть доступна'
 
 exec celery -A config.celery_app beat -l INFO

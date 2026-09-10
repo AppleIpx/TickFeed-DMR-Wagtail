@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # tickfeeddmr/
@@ -328,6 +329,70 @@ MARKET_DATA_TRADE_READ_COUNT = env.int("MARKET_DATA_TRADE_READ_COUNT", default=1
 MARKET_DATA_TRADE_READ_BLOCK_MS = env.int(
     "MARKET_DATA_TRADE_READ_BLOCK_MS",
     default=5000,
+)
+
+# MOEX
+# ------------------------------------------------------------------------------
+MOEX_ISS_BASE_URL = env("MOEX_ISS_BASE_URL", default="https://iss.moex.com")
+MOEX_DEFAULT_BOARD = env("MOEX_DEFAULT_BOARD", default="TQBR")
+MOEX_TRADES_PAGE_LIMIT = env.int("MOEX_TRADES_PAGE_LIMIT", default=5)
+# Бюджет прогона — потолок на сетевые вызовы одного прогона опроса
+# (`asyncio.timeout` в `services/moex_polling/`); повторы/таймауты одного
+# запроса — константы `providers/moex/client.py`. Инвариант: бюджет < TTL
+# лока с запасом не меньше `_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS`, иначе лок
+# истечёт под живым прогоном и следующий тик наложится на него; бюджет > 0,
+# иначе каждый тик падал бы по бюджету (проверки ниже). Запас TTL над
+# бюджетом покрывает то, что внутри лока, но вне бюджета: запись в БД,
+# `aclose()`, снятие лока.
+# Борд (тик 60 с): бюджет 45 < TTL 55 < тик — лок, осиротевший после
+# жёсткого падения процесса, истекает до следующего тика.
+# Сделки (тик 60 с): бюджет 100 < TTL 120 — сознательно больше тика:
+# догон ленты законно длится дольше минуты, следующий тик при этом
+# пропускается по занятому локу.
+MOEX_BOARD_POLL_BUDGET_SECONDS = env.int(
+    "MOEX_BOARD_POLL_BUDGET_SECONDS",
+    default=45,
+)
+MOEX_BOARD_POLL_LOCK_TTL_SECONDS = env.int(
+    "MOEX_BOARD_POLL_LOCK_TTL_SECONDS",
+    default=55,
+)
+MOEX_TRADES_POLL_BUDGET_SECONDS = env.int(
+    "MOEX_TRADES_POLL_BUDGET_SECONDS",
+    default=100,
+)
+MOEX_TRADES_POLL_LOCK_TTL_SECONDS = env.int(
+    "MOEX_TRADES_POLL_LOCK_TTL_SECONDS",
+    default=120,
+)
+_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS = 5
+
+
+def _validate_moex_poll_budget(kind: str, budget: int, ttl: int) -> None:
+    budget_name = f"MOEX_{kind}_POLL_BUDGET_SECONDS"
+    ttl_name = f"MOEX_{kind}_POLL_LOCK_TTL_SECONDS"
+    if budget <= 0:
+        msg = f"{budget_name} must be a positive number of seconds, got {budget}"
+        raise ImproperlyConfigured(msg)
+    if ttl - budget < _MOEX_POLL_MIN_LOCK_MARGIN_SECONDS:
+        msg = (
+            f"{ttl_name} ({ttl}) must exceed {budget_name} ({budget}) by at least "
+            f"{_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS}s: the margin covers DB writes, "
+            f"client close and lock release that run inside the lock but outside "
+            f"the run budget"
+        )
+        raise ImproperlyConfigured(msg)
+
+
+_validate_moex_poll_budget(
+    "BOARD",
+    MOEX_BOARD_POLL_BUDGET_SECONDS,
+    MOEX_BOARD_POLL_LOCK_TTL_SECONDS,
+)
+_validate_moex_poll_budget(
+    "TRADES",
+    MOEX_TRADES_POLL_BUDGET_SECONDS,
+    MOEX_TRADES_POLL_LOCK_TTL_SECONDS,
 )
 
 

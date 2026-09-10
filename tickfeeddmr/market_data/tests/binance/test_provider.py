@@ -4,7 +4,7 @@ REST-слой замокан на уровне `BinanceRestClient` (через `
 провайдер принимает готовый клиент), а не через HTTP-транспорт: здесь
 проверяется только склейка REST+WS в `BinanceProvider` (пагинация,
 курсор, делегирование `stream()`), формат самих HTTP-ответов уже покрыт
-`test_providers_binance_rest.py`.
+`test_rest.py`.
 """
 
 from __future__ import annotations

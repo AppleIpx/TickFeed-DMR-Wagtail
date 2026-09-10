@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 545" width="1320" height="545" role="img" aria-label="Схема: задачи poll_moex_board и poll_moex_trades независимо проверяют каталог StockAsset и Redis-лок до похода в сеть; при необходимости запрашивают MOEX ISS (снимок борда одним GET на все бумаги, либо страницу ленты сделок по курсору TRADENO) и идемпотентно пишут StockPriceSnapshot или StockTrade через bulk_create(ignore_conflicts=True). Три пунктирные ветки — пустой каталог, занятый лок, закрытые торги/нет новых сделок — останавливают прогон раньше сети.">
+  <rect x="0" y="0" width="1320" height="545" fill="#f7f3e8"></rect>
+
+  <defs>
+    <marker id="arrow-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <polygon points="0,0 10,5 0,10" fill="#1c2130"></polygon>
+    </marker>
+    <marker id="arrow-skip" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <polygon points="0,0 10,5 0,10" fill="#9c4433"></polygon>
+    </marker>
+  </defs>
+
+  <!-- boundary band: MOEX ISS column -->
+  <rect x="745" y="0" width="150" height="545" fill="#eddcb8" opacity="0.5"></rect>
+  <text x="820" y="14" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="9.5" letter-spacing="0.08em" fill="#7c5220">ГРАНИЦА · ВНЕШНИЙ API</text>
+
+  <!-- ============ LANE A : poll_moex_board ============ -->
+  <rect x="175" y="15" width="340" height="60" rx="10" fill="#ece4d2" stroke="#ddd3ba"></rect>
+  <text x="192" y="39" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" letter-spacing="0.06em" fill="#454d5e">⏱ CELERY BEAT</text>
+  <text x="192" y="58" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#1c2130">*/1 7-23 mon-fri · Europe/Moscow</text>
+
+  <text x="545" y="106" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11.5" letter-spacing="0.05em" fill="#6f7787">СНИМОК БОРДА · poll_moex_board</text>
+
+  <line x1="250" y1="75" x2="250" y2="113" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c1 -->
+  <rect x="175" y="115" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="250" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">Есть активные</text>
+  <text x="250" y="166" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">StockAsset борда?</text>
+
+  <line x1="325" y1="151" x2="363" y2="151" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c2 -->
+  <rect x="365" y="115" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="440" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">Redis‑лок</text>
+  <text x="440" y="166" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">SET NX EX + токен</text>
+
+  <line x1="515" y1="151" x2="553" y2="151" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c3 -->
+  <rect x="555" y="115" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="630" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">MoexIssClient</text>
+  <text x="630" y="166" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1c2130">GET .../securities.json</text>
+
+  <line x1="705" y1="151" x2="743" y2="151" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c4 : ISS -->
+  <rect x="745" y="115" width="150" height="72" rx="10" fill="#ffffff" stroke="#a06b28" stroke-width="1.4"></rect>
+  <text x="820" y="147" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13.5" font-weight="600" fill="#7c5220">MOEX ISS</text>
+  <text x="820" y="165" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#6f7787">iss.moex.com</text>
+
+  <line x1="895" y1="151" x2="933" y2="151" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c5 -->
+  <rect x="935" y="115" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="1010" y="148" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">TRADINGSTATUS</text>
+  <text x="1010" y="166" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">== T ?</text>
+
+  <line x1="1085" y1="151" x2="1123" y2="151" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- A c6 : write -->
+  <rect x="1125" y="115" width="150" height="72" rx="10" fill="#dbeee1" stroke="#276b4d" stroke-width="1.4"></rect>
+  <text x="1200" y="145" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#454d5e">BoardSnapshotService</text>
+  <text x="1200" y="164" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#276b4d">→ StockPriceSnapshot</text>
+
+  <!-- A skip branches -->
+  <line x1="250" y1="187" x2="250" y2="213" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="165" y="215" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="250" y="231" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">нет активных бумаг</text>
+  <text x="250" y="245" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">— в сеть не идём</text>
+
+  <line x1="440" y1="187" x2="440" y2="213" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="355" y="215" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="440" y="231" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">лок занят —</text>
+  <text x="440" y="245" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">прогон уже идёт</text>
+
+  <line x1="1010" y1="187" x2="1010" y2="213" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="925" y="215" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="1010" y="231" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">TRADINGSTATUS≠T —</text>
+  <text x="1010" y="245" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">снапшот не пишем</text>
+
+  <text x="820" y="230" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="10.5" fill="#6f7787">лаг данных</text>
+  <text x="820" y="245" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="10.5" fill="#6f7787">~15 мин (UPDATETIME)</text>
+
+  <!-- ============ LANE B : poll_moex_trades ============ -->
+  <rect x="175" y="280" width="340" height="60" rx="10" fill="#ece4d2" stroke="#ddd3ba"></rect>
+  <text x="192" y="304" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11" letter-spacing="0.06em" fill="#454d5e">⏱ CELERY BEAT</text>
+  <text x="192" y="323" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="12" fill="#1c2130">*/1 7-23 mon-fri · Europe/Moscow</text>
+
+  <text x="545" y="371" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="11.5" letter-spacing="0.05em" fill="#6f7787">ЛЕНТА СДЕЛОК · poll_moex_trades</text>
+
+  <line x1="250" y1="340" x2="250" y2="378" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c1 -->
+  <rect x="175" y="380" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="250" y="413" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">Есть бумаги с</text>
+  <text x="250" y="431" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">track_trades=True?</text>
+
+  <line x1="325" y1="416" x2="363" y2="416" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c2 -->
+  <rect x="365" y="380" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="440" y="413" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">Redis‑лок</text>
+  <text x="440" y="431" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">SET NX EX + токен</text>
+
+  <line x1="515" y1="416" x2="553" y2="416" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c3 with pagination loop -->
+  <path d="M 583,380 C 583,358 677,358 677,380" fill="none" stroke="#1c2130" stroke-width="1.2" marker-end="url(#arrow-ink)"></path>
+  <text x="630" y="349" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="9.5" fill="#6f7787">next_trade=1, пока страница полна</text>
+  <rect x="555" y="380" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="630" y="413" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">MoexIssClient</text>
+  <text x="630" y="431" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1c2130">GET .../trades.json</text>
+
+  <line x1="705" y1="416" x2="743" y2="416" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c4 : ISS -->
+  <rect x="745" y="380" width="150" height="72" rx="10" fill="#ffffff" stroke="#a06b28" stroke-width="1.4"></rect>
+  <text x="820" y="412" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13.5" font-weight="600" fill="#7c5220">MOEX ISS</text>
+  <text x="820" y="430" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#6f7787">iss.moex.com</text>
+
+  <line x1="895" y1="416" x2="933" y2="416" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c5 -->
+  <rect x="935" y="380" width="150" height="72" rx="10" fill="#ffffff" stroke="#ddd3ba"></rect>
+  <text x="1010" y="413" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">страница</text>
+  <text x="1010" y="431" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" fill="#1c2130">пуста?</text>
+
+  <line x1="1085" y1="416" x2="1123" y2="416" stroke="#1c2130" stroke-width="1.4" marker-end="url(#arrow-ink)"></line>
+
+  <!-- B c6 : write -->
+  <rect x="1125" y="380" width="150" height="72" rx="10" fill="#dbeee1" stroke="#276b4d" stroke-width="1.4"></rect>
+  <text x="1200" y="410" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#454d5e">TradeIngestService</text>
+  <text x="1200" y="429" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="600" fill="#276b4d">→ StockTrade + курсор</text>
+
+  <!-- B skip branches -->
+  <line x1="250" y1="452" x2="250" y2="478" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="165" y="480" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="250" y="496" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">нет track_trades=True</text>
+  <text x="250" y="510" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">— в сеть не идём</text>
+
+  <line x1="440" y1="452" x2="440" y2="478" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="355" y="480" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="440" y="496" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">лок занят —</text>
+  <text x="440" y="510" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">прогон уже идёт</text>
+
+  <line x1="1010" y1="452" x2="1010" y2="478" stroke="#9c4433" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arrow-skip)"></line>
+  <rect x="925" y="480" width="170" height="40" rx="8" fill="#f3e0d8" stroke="#9c4433"></rect>
+  <text x="1010" y="496" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">0 сделок —</text>
+  <text x="1010" y="510" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#9c4433">курсор не двигаем</text>
+
+  <text x="725" y="495" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="10" fill="#6f7787">MOEX_TRADES_PAGE_LIMIT</text>
+  <text x="725" y="510" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="10" fill="#6f7787">до 5 страниц за прогон</text>
+</svg>

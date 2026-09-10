@@ -13,6 +13,13 @@ from tickfeeddmr.market_data.models.fiat import (
     FiatPriceSnapshot,
     FiatSource,
 )
+from tickfeeddmr.market_data.models.stock import (
+    StockAsset,
+    StockBoard,
+    StockPriceSnapshot,
+    StockTrade,
+    StockTradeSide,
+)
 
 __all__ = [
     "AssetBase",
@@ -21,4 +28,9 @@ __all__ = [
     "FiatCurrency",
     "FiatPriceSnapshot",
     "FiatSource",
+    "StockAsset",
+    "StockBoard",
+    "StockPriceSnapshot",
+    "StockTrade",
+    "StockTradeSide",
 ]
