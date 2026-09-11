@@ -24,8 +24,14 @@ class CryptoAssetAdmin(ModelAdmin):
 class FiatCurrencyAdmin(ModelAdmin):
     model = FiatCurrency
     menu_icon = "globe"
-    list_display = ["symbol", "display_name", "iso_code", "source", "is_active"]
-    list_filter = ["source", "is_active"]
+    list_display = [
+        "symbol",
+        "display_name",
+        "iso_code",
+        "cbr_id",
+        "is_active",
+    ]
+    list_filter = ["is_active"]
     search_fields = ["symbol", "display_name", "iso_code"]
 
 
@@ -41,8 +47,8 @@ class FiatPriceSnapshotAdmin(ModelAdmin):
     model = FiatPriceSnapshot
     menu_icon = "decimal"
     date_hierarchy = "timestamp"
-    list_display = ["asset", "price", "source", "timestamp"]
-    list_filter = ["asset", "source"]
+    list_display = ["asset", "price", "effective_date", "timestamp"]
+    list_filter = ["asset"]
 
 
 @modeladmin_register

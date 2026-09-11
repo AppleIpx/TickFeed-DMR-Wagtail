@@ -5,7 +5,7 @@ from decimal import Decimal
 import factory
 from django.utils import timezone
 
-from tickfeeddmr.market_data.models import FiatCurrency, FiatPriceSnapshot, FiatSource
+from tickfeeddmr.market_data.models import FiatCurrency, FiatPriceSnapshot
 
 
 class FiatCurrencyFactory(factory.django.DjangoModelFactory):
@@ -15,8 +15,7 @@ class FiatCurrencyFactory(factory.django.DjangoModelFactory):
     symbol = factory.Sequence(lambda n: f"FIAT{n}")
     display_name = factory.Faker("word")
     iso_code = factory.Sequence(lambda n: f"X{n:02d}")
-    moex_secid = ""
-    source = FiatSource.MOEX
+    cbr_id = factory.Sequence(lambda n: f"R{n:05d}")
 
 
 class FiatPriceSnapshotFactory(factory.django.DjangoModelFactory):
@@ -25,5 +24,5 @@ class FiatPriceSnapshotFactory(factory.django.DjangoModelFactory):
 
     asset = factory.SubFactory(FiatCurrencyFactory)
     price = Decimal("91.123456")
-    source = FiatSource.MOEX
+    effective_date = factory.LazyFunction(lambda: timezone.now().date())
     timestamp = factory.LazyFunction(timezone.now)

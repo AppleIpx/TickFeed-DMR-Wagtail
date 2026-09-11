@@ -1,8 +1,5 @@
-import asyncio
 import logging
-import random
 import ssl
-import time
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Literal, cast
@@ -10,10 +7,7 @@ from urllib.parse import quote
 
 import httpx
 
-from tickfeeddmr.market_data.providers.exceptions import (
-    ProviderConnectionError,
-    ProviderResponseError,
-)
+from tickfeeddmr.market_data.providers.http_retry import RetryingHttpClient, RetryPolicy
 from tickfeeddmr.market_data.providers.moex.timeutils import (
     MOSCOW_TZ,
     board_updatetime_to_utc,
@@ -26,7 +20,7 @@ from tickfeeddmr.market_data.providers.moex.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Mapping, Sequence
     from datetime import date
 
 logger = logging.getLogger(__name__)
@@ -40,37 +34,14 @@ TRADES_PATH_TEMPLATE = (
 CANDLES_PATH_TEMPLATE = (
     "/iss/engines/stock/markets/shares/securities/{secid}/candles.json"
 )
-# Таймауты httpx — поштучные на операцию (коннект, каждое чтение сокета),
-# а не на запрос целиком: ответ, приходящий "струйкой", может идти сколь
-# угодно долго, не нарушая `REQUEST_TIMEOUT_SECONDS` (вживую наблюдался
-# `ReadTimeout` через 19–29 с при `timeout=10`). Потолок на всю попытку
-# целиком держит `ATTEMPT_DEADLINE_SECONDS` через `asyncio.timeout`. Он
-# чуть больше read-таймаута: при нормальном коннекте (~0.1 с) на
-# "молчащем" сервере первым срабатывает именованный `httpx.ReadTimeout`
-# (~10 с). Но коннект + чтение могут вместе занять до 5 + 10 = 15 с, так
-# что при медленном коннекте (SYN-перепосылки, 1–5 с) дедлайн 12 с может
-# сработать раньше read-таймаута — тогда причина в логе "TimeoutError
-# (attempt deadline 12s exceeded)", а не `ReadTimeout`. Нормальные ответы
-# ISS — ~0.4–1.5 с (борд), ~1 с (страница сделок), самый медленный
-# успешный в фазе восстановления после сбоя — ~8.7 с.
 CONNECT_TIMEOUT_SECONDS = 5.0
 REQUEST_TIMEOUT_SECONDS = 10.0
 ATTEMPT_DEADLINE_SECONDS = 12.0
 
-# Повторы одного GET при сетевых сбоях ISS. Периметр MOEX периодически
-# недоступен окнами ~60–80 с; большинство отказов в таком окне — быстрые
-# `ConnectError`, поэтому именно число попыток × backoff задаёт, какой
-# отрезок времени повторы покрывают: 1+2+4+8+8+8 ≈ 31 с (±jitter) — окно,
-# кончившееся в пределах этого отрезка, "перепрыгивается" в том же тике.
-# Худший случай (каждая попытка упирается в дедлайн) обрезает бюджет
-# прогона вызывающего кода (`MOEX_*_POLL_BUDGET_SECONDS`), не клиент.
 MAX_ATTEMPTS = 7
 INITIAL_BACKOFF_SECONDS = 1.0
 MAX_BACKOFF_SECONDS = 8.0
 BACKOFF_MULTIPLIER = 2
-# Мультипликативный jitter ±20%: разводит повторы задач борда и сделок,
-# которые стартуют по расписанию с разницей в десятки миллисекунд, почти
-# не сокращая покрываемый повторами отрезок (full jitter сократил бы вдвое).
 BACKOFF_JITTER = 0.2
 
 # 500–504 — "временные проблемы" по руководству ISS v1.4 (повторить тот же
@@ -78,23 +49,6 @@ BACKOFF_JITTER = 0.2
 # документации нет. 501/505 и прочие 5xx — постоянные, повтор бесполезен.
 RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
-# Транспортные ошибки, которые означают ошибку конфигурации, кода или
-# доверия, а не сетевой сбой: их не повторяем и пробрасываем как есть,
-# чтобы задача падала обычным FAILURE с трейсом, а не превращала проблему
-# в вечное "MOEX ISS недоступен" ("raised expected" без трейса).
-# - подклассы `httpx.TransportError` — неверная схема в
-#   `MOEX_ISS_BASE_URL`, баг в формировании запроса, ошибка прокси
-#   (`httpx.ProxyError`: например, 407 — это конфигурация, а не сбой ISS;
-#   прокси в проекте не используется, так что его появление — само по
-#   себе повод для трейса). Заодно текст `ProxyError`, который может
-#   содержать URL прокси с учётными данными, не попадает в наше
-#   сообщение `ProviderConnectionError`;
-# - причины где-то в цепочке `__cause__`/`__context__` — провал проверки
-#   TLS-сертификата httpx отдаёт как обычный `httpx.ConnectError`
-#   (`httpx.ConnectError` ← `httpcore.ConnectError` ←
-#   `ssl.SSLCertVerificationError`), отличить его можно только по цепочке.
-#   Прочие `ssl.SSLError` (обрыв посреди хендшейка и т.п.) и DNS
-#   (`socket.gaierror`) остаются повторяемыми — они бывают транзиентными.
 _NON_RETRYABLE_TRANSPORT_ERRORS = (
     httpx.UnsupportedProtocol,
     httpx.LocalProtocolError,
@@ -132,14 +86,13 @@ class MoexIssClient:
         base_url: str,
         client: httpx.AsyncClient | None = None,
     ) -> None:
-        self._client = client or httpx.AsyncClient(
+        self._http = RetryingHttpClient(
             base_url=base_url,
-            timeout=httpx.Timeout(
-                REQUEST_TIMEOUT_SECONDS,
-                connect=CONNECT_TIMEOUT_SECONDS,
-            ),
+            client=client,
+            connect_timeout=CONNECT_TIMEOUT_SECONDS,
+            request_timeout=REQUEST_TIMEOUT_SECONDS,
+            logger=logger,
         )
-        self._last_failure_reason: str | None = None
 
     @property
     def last_failure_reason(self) -> str | None:
@@ -152,10 +105,10 @@ class MoexIssClient:
         попытка текущего запроса ещё не провалилась (например, бюджет
         оборвал первую же).
         """
-        return self._last_failure_reason
+        return self._http.last_failure_reason
 
     async def aclose(self) -> None:
-        await self._client.aclose()
+        await self._http.aclose()
 
     async def get_board_snapshot(self, board: str) -> Sequence[MoexBoardRow]:
         """Снимок борда одним запросом — цены и объёмы по всем бумагам борда."""
@@ -229,86 +182,22 @@ class MoexIssClient:
         *,
         params: Mapping[str, str | int],
     ) -> httpx.Response:
-        """GET с повторами; возвращает только успешный (не-ошибочный) ответ.
-
-        Повторяет на `httpx.TransportError` (кроме
-        `_NON_RETRYABLE_TRANSPORT_ERRORS` и ошибок с
-        `_NON_RETRYABLE_CAUSES` в цепочке причин — те пробрасываются как
-        есть), на срабатывании дедлайна попытки и на статусах
-        `RETRYABLE_STATUS_CODES`. Прочие ошибочные статусы (4xx, 501, …) —
-        сразу `ProviderResponseError` через `_raise_for_status`, без
-        повторов. После `MAX_ATTEMPTS` неудач — `ProviderConnectionError`
-        с цепочкой от последней ошибки; её короткое описание (тип и
-        усечённый текст ошибки, `HTTP <код>` для статуса или дедлайн
-        попытки) — в сообщении, в `reason` и в `last_failure_reason`.
-        Успех после неудачных попыток — одна строка INFO с итогом
-        восстановления (нештатный исход, см. конвенцию логирования в
-        `CLAUDE.md`), без записи на каждую попытку.
-
-        `CancelledError` сознательно не перехватывается (он
-        `BaseException`, а не `Exception`): если бюджет прогона вызывающего
-        кода истёк посреди попытки или паузы между попытками, отмена должна
-        прервать цикл повторов, а не превратиться в ещё одну попытку.
-        Внутренний `asyncio.timeout` попытки превращает в `TimeoutError`
-        только собственное истечение, чужую отмену он пропускает дальше.
-        Сырой `TimeoutError` отсюда наружу не выходит никогда — у
-        вызывающего кода он однозначно означает его собственный бюджет.
-        """
-        started = time.monotonic()
-        self._last_failure_reason = None
-        last_error: Exception | None = None
-        reason = ""
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                async with asyncio.timeout(ATTEMPT_DEADLINE_SECONDS):
-                    response = await self._client.get(path, params=params)
-            except httpx.TransportError as exc:
-                if _is_non_retryable(exc):
-                    raise
-                last_error, reason = exc, _describe_error(exc)
-            except TimeoutError as exc:
-                # Только собственный дедлайн попытки: чужая отмена приходит
-                # как `CancelledError` и сюда не попадает.
-                last_error = exc
-                reason = f"attempt deadline {ATTEMPT_DEADLINE_SECONDS:g}s exceeded"
-            else:
-                if response.status_code not in RETRYABLE_STATUS_CODES:
-                    self._raise_for_status(response)
-                    if attempt > 1:
-                        logger.info(
-                            f"MOEX ISS {path}: ответ получен с {attempt}-й попытки "
-                            f"за {time.monotonic() - started:.1f} с "
-                            f"(последняя ошибка: {reason})",
-                        )
-                    return response
-                # Тело ответа 5xx/429 не логируем на каждой попытке —
-                # только код статуса попадёт в итоговую ошибку.
-                last_error = ProviderResponseError(
-                    f"MOEX ISS request failed with status {response.status_code}",
-                )
-                reason = f"HTTP {response.status_code}"
-            self._last_failure_reason = reason
-
-            if attempt < MAX_ATTEMPTS:
-                delay = _backoff_delay(attempt)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(
-                        f"MOEX ISS {path}: попытка {attempt}/{MAX_ATTEMPTS} "
-                        f"не удалась ({reason}), повтор через {delay:.1f} с",
-                    )
-                await asyncio.sleep(delay)
-
-        elapsed = time.monotonic() - started
-        msg = (
-            f"MOEX ISS unreachable: {reason} "
-            f"after {MAX_ATTEMPTS} attempts in {elapsed:.1f}s (GET {path})"
+        """GET с повторами; возвращает только успешный (не-ошибочный) ответ."""
+        policy = RetryPolicy(
+            max_attempts=MAX_ATTEMPTS,
+            initial_backoff_seconds=INITIAL_BACKOFF_SECONDS,
+            max_backoff_seconds=MAX_BACKOFF_SECONDS,
+            backoff_multiplier=BACKOFF_MULTIPLIER,
+            backoff_jitter=BACKOFF_JITTER,
+            retryable_status_codes=RETRYABLE_STATUS_CODES,
+            non_retryable_transport_errors=_NON_RETRYABLE_TRANSPORT_ERRORS,
+            non_retryable_causes=_NON_RETRYABLE_CAUSES,
+            error_reason_max_chars=ERROR_REASON_MAX_CHARS,
+            log_label="MOEX ISS",
+            error_label="MOEX ISS",
+            attempt_deadline_seconds=ATTEMPT_DEADLINE_SECONDS,
         )
-        raise ProviderConnectionError(
-            msg,
-            reason=reason,
-            attempts=MAX_ATTEMPTS,
-            elapsed_seconds=elapsed,
-        ) from last_error
+        return await self._http.get(path, params=params, policy=policy)
 
     @staticmethod
     def _board_row_from_columns(
@@ -371,58 +260,6 @@ class MoexIssClient:
             begin=moscow_timestamp_to_utc(cast("str", get("begin"))),
             end=moscow_timestamp_to_utc(cast("str", get("end"))),
         )
-
-    @staticmethod
-    def _raise_for_status(response: httpx.Response) -> None:
-        if response.is_error:
-            logger.error(
-                f"Ошибка MOEX ISS {response.status_code}: {response.text[:500]}",
-            )
-            msg = f"MOEX ISS request failed with status {response.status_code}"
-            raise ProviderResponseError(msg)
-
-
-def _iter_error_chain(exc: BaseException) -> Iterator[BaseException]:
-    """`exc` и его причины по `__cause__`/`__context__`, с защитой от циклов."""
-    seen: set[int] = set()
-    current: BaseException | None = exc
-    while current is not None and id(current) not in seen:
-        seen.add(id(current))
-        yield current
-        current = current.__cause__ or current.__context__
-
-
-def _is_non_retryable(exc: httpx.TransportError) -> bool:
-    if isinstance(exc, _NON_RETRYABLE_TRANSPORT_ERRORS):
-        return True
-    return any(
-        isinstance(link, _NON_RETRYABLE_CAUSES) for link in _iter_error_chain(exc)
-    )
-
-
-def _describe_error(exc: httpx.TransportError) -> str:
-    """`ConnectError ([Errno 111] Connection refused)` — тип и усечённый текст.
-
-    Текст приводится к одной строке (все пробельные символы, включая
-    CR/LF, схлопываются в пробел) и режется до `ERROR_REASON_MAX_CHARS` —
-    он попадает в строки лога, и перевод строки внутри позволил бы
-    подделать соседнюю запись. Вызывается только для повторяемых ошибок:
-    `httpx.ProxyError`, чей текст может содержать URL прокси с учётными
-    данными, неповторяемый и сюда не доходит.
-    """
-    name = type(exc).__name__
-    text = " ".join(str(exc).split())[:ERROR_REASON_MAX_CHARS]
-    return f"{name} ({text})" if text else name
-
-
-def _backoff_delay(attempt: int) -> float:
-    """Пауза после неудачной попытки `attempt` (с 1): 1, 2, 4, 8, 8, … с ±jitter."""
-    base = min(
-        MAX_BACKOFF_SECONDS,
-        INITIAL_BACKOFF_SECONDS * BACKOFF_MULTIPLIER ** (attempt - 1),
-    )
-    # Jitter для рассинхронизации повторов, не криптография.
-    return base * random.uniform(1 - BACKOFF_JITTER, 1 + BACKOFF_JITTER)  # noqa: S311
 
 
 def _column_getter(
