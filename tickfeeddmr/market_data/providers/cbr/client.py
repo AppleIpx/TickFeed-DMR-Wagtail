@@ -120,15 +120,15 @@ def _row_from_element(valute: Element) -> CbrRateRow | None:
     cbr_id = valute.attrib.get("ID")
     char_code = valute.findtext("CharCode")
     nominal_text = valute.findtext("Nominal")
-    value_text = valute.findtext("Value")
-    if not (cbr_id and char_code and nominal_text and value_text):
+    vunit_rate_text = valute.findtext("VunitRate")
+    if not (cbr_id and char_code and nominal_text and vunit_rate_text):
         logger.warning(
             f"ЦБ РФ: пропущена строка Valute без обязательных полей: {cbr_id}",
         )
         return None
     try:
         nominal = int(nominal_text)
-        value = Decimal(value_text.replace(",", "."))
+        rate = Decimal(vunit_rate_text.replace(",", "."))
     except (ValueError, InvalidOperation) as exc:
         logger.warning(
             f"ЦБ РФ: не удалось разобрать курс {cbr_id} ({char_code}): {exc}",
@@ -141,5 +141,5 @@ def _row_from_element(valute: Element) -> CbrRateRow | None:
         cbr_id=cbr_id,
         char_code=char_code,
         nominal=nominal,
-        rate=value / nominal,
+        rate=rate,
     )

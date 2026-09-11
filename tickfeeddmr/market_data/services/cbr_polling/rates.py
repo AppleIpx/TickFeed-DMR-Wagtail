@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from datetime import time as dt_time
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
@@ -19,7 +19,6 @@ from tickfeeddmr.market_data.services.locks import LockBusyError, redis_lock
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from datetime import date
 
     from tickfeeddmr.market_data.providers.cbr import CbrRateRow
 
@@ -44,14 +43,16 @@ class CbrWriteResult:
     """Итог записи курсов — сырые счётчики для лога вызывающей задачи."""
 
     written: int
+    already_up_to_date: int
     skipped_unknown_asset: int
 
 
 class CbrRatesPoller:
     """Один прогон опроса курсов ЦБ РФ по всем активным `FiatCurrency`."""
 
-    async def run(self) -> None:
-        """Публичная точка входа — пустой справочник/лок, затем сам опрос."""
+    async def run(self, *, today: date | None = None) -> None:
+        """Публичная точка входа — пустой справочник/лок, затем опрос."""
+        today = today or datetime.now(MOSCOW_TZ).date()
         total = await FiatCurrency.objects.filter(is_active=True).acount()
         if total == 0:
             logger.info(
@@ -60,20 +61,39 @@ class CbrRatesPoller:
             )
             return
 
+        target = today + timedelta(days=1)
+
         try:
             async with redis_lock(
                 redis_url=settings.REDIS_URL,
                 key=CBR_LOCK_KEY,
                 ttl_seconds=settings.CBR_POLL_LOCK_TTL_SECONDS,
             ):
-                await self._poll(total=total)
+                await self._poll(total=total, target=target)
         except LockBusyError:
             logger.info(
                 "Опрос курсов ЦБ РФ пропущен: предыдущий прогон ещё идёт (лок занят)",
             )
 
-    async def _poll(self, *, total: int) -> None:
-        logger.info(f"Опрос курсов ЦБ РФ: активных валют {total}")
+    async def _poll(self, *, total: int, target: date) -> None:
+        # Без сети: все ли активные валюты уже имеют курс на `target`?
+        missing = (
+            await FiatCurrency.objects.filter(is_active=True)
+            .exclude(
+                price_snapshots__effective_date=target,
+            )
+            .acount()
+        )
+        if missing == 0:
+            logger.info(
+                f"Опрос курсов ЦБ РФ пропущен: курсы на {target} уже есть у "
+                f"всех {total} активных валют",
+            )
+            return
+        logger.info(
+            f"Опрос курсов ЦБ РФ: у {missing} из {total} валют нет курса "
+            f"на {target}, идём в ЦБ",
+        )
 
         budget = settings.CBR_POLL_BUDGET_SECONDS
         deadline = asyncio.get_running_loop().time() + budget
@@ -94,6 +114,16 @@ class CbrRatesPoller:
         finally:
             await client.aclose()
 
+        logger.info(
+            f"ЦБ РФ ответил курсами на {effective_date} ({len(rows)} валют в ответе)",
+        )
+        if effective_date != target:
+            logger.info(
+                f"ЦБ РФ ещё не опубликовал {target} (отдаёт {effective_date}), "
+                f"ждём следующий слот",
+            )
+            return
+
         if not rows:
             logger.info("ЦБ РФ вернул пустой список курсов")
             return
@@ -101,6 +131,7 @@ class CbrRatesPoller:
         result = await self._write_snapshots(effective_date, rows)
         logger.info(
             f"Курсы ЦБ РФ на {effective_date}: записано {result.written}, "
+            f"уже было {result.already_up_to_date}, "
             f"пропущено (нет активной валюты) {result.skipped_unknown_asset}",
         )
 
@@ -119,6 +150,14 @@ class CbrRatesPoller:
             )
         }
 
+        already_ids = {
+            asset_id
+            async for asset_id in FiatPriceSnapshot.objects.filter(
+                effective_date=effective_date,
+                asset_id__in=[asset.id for asset in assets_by_cbr_id.values()],
+            ).values_list("asset_id", flat=True)
+        }
+
         timestamp = datetime.combine(
             effective_date,
             dt_time.min,
@@ -126,11 +165,15 @@ class CbrRatesPoller:
         ).astimezone(UTC)
 
         snapshots = []
+        already_up_to_date = 0
         skipped_unknown_asset = 0
         for row in rows:
             asset = assets_by_cbr_id.get(row.cbr_id)
             if asset is None:
                 skipped_unknown_asset += 1
+                continue
+            if asset.id in already_ids:
+                already_up_to_date += 1
                 continue
             snapshots.append(
                 FiatPriceSnapshot(
@@ -148,10 +191,11 @@ class CbrRatesPoller:
             )
         return CbrWriteResult(
             written=len(snapshots),
+            already_up_to_date=already_up_to_date,
             skipped_unknown_asset=skipped_unknown_asset,
         )
 
 
-async def poll_rates() -> None:
+async def poll_rates(*, today: date | None = None) -> None:
     """Снимок курсов ЦБ РФ по всем активным `FiatCurrency`."""
-    await CbrRatesPoller().run()
+    await CbrRatesPoller().run(today=today)

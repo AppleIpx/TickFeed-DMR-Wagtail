@@ -84,10 +84,11 @@ def test_parse_daily_rates_realistic_xml_with_nominal() -> None:
             cbr_id="R01820",
             char_code="JPY",
             nominal=100,
-            rate=Decimal("63.1234") / 100,
+            rate=Decimal("0.631234"),
         ),
     ]
-    # Nominal != 1 действительно делит, а не игнорируется.
+    # VunitRate уже курс за одну единицу валюты — Nominal здесь только
+    # проверяется на положительность, в расчёт курса не участвует.
     assert rows[1].rate == Decimal("0.631234")
 
 
@@ -102,27 +103,27 @@ def test_parse_daily_rates_skips_malformed_rows(
                 <CharCode>USD</CharCode>
                 <Nominal>1</Nominal>
                 <Name>Доллар США</Name>
-                <Value>92,4574</Value>
+                <VunitRate>92,4574</VunitRate>
             </Valute>
             <Valute ID="R01239">
                 <NumCode>978</NumCode>
                 <Nominal>1</Nominal>
                 <Name>Евро</Name>
-                <Value>100,1234</Value>
+                <VunitRate>100,1234</VunitRate>
             </Valute>
             <Valute ID="R01700J">
                 <NumCode>417</NumCode>
                 <CharCode>KGS</CharCode>
                 <Nominal>10</Nominal>
                 <Name>Сомони</Name>
-                <Value>not-a-number</Value>
+                <VunitRate>not-a-number</VunitRate>
             </Valute>
             <Valute ID="R01820">
                 <NumCode>392</NumCode>
                 <CharCode>JPY</CharCode>
                 <Nominal>0</Nominal>
                 <Name>Иена</Name>
-                <Value>63,1234</Value>
+                <VunitRate>0,631234</VunitRate>
             </Valute>
         </ValCurs>
         """,
@@ -133,7 +134,7 @@ def test_parse_daily_rates_skips_malformed_rows(
 
     assert effective_date == date(2026, 9, 12)
     # Только валидная строка USD дожила до результата — три "битых" строки
-    # (нет CharCode, нечисловой Value, неположительный Nominal) пропущены.
+    # (нет CharCode, нечисловой VunitRate, неположительный Nominal) пропущены.
     assert rows == [
         CbrRateRow(
             cbr_id="R01235",
@@ -144,6 +145,35 @@ def test_parse_daily_rates_skips_malformed_rows(
     ]
     assert len(caplog.records) == 3  # noqa: PLR2004
     assert all(record.levelname == "WARNING" for record in caplog.records)
+
+
+def test_parse_daily_rates_skips_row_without_vunit_rate(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Value без VunitRate — VunitRate теперь обязателен, Value больше не
+    # читается вообще, так что такая строка не может быть разобрана.
+    xml = _daily_rates_xml(
+        """
+        <ValCurs Date="12.09.2026" name="Foreign Currency Market">
+            <Valute ID="R01235">
+                <NumCode>840</NumCode>
+                <CharCode>USD</CharCode>
+                <Nominal>1</Nominal>
+                <Name>Доллар США</Name>
+                <Value>92,4574</Value>
+            </Valute>
+        </ValCurs>
+        """,
+    )
+
+    with caplog.at_level("WARNING"):
+        effective_date, rows = _parse_daily_rates(xml)
+
+    assert effective_date == date(2026, 9, 12)
+    assert rows == []
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+    assert "без обязательных полей" in caplog.records[0].message
 
 
 def test_parse_daily_rates_missing_date_attribute_raises() -> None:
