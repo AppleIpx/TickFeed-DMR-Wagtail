@@ -395,6 +395,12 @@ _validate_moex_poll_budget(
     MOEX_TRADES_POLL_LOCK_TTL_SECONDS,
 )
 
+# ЦБ РФ
+# ------------------------------------------------------------------------------
+CBR_DAILY_RATES_BASE_URL = env("CBR_DAILY_RATES_BASE_URL", default="https://www.cbr.ru")
+CBR_POLL_BUDGET_SECONDS = env.int("CBR_POLL_BUDGET_SECONDS", default=20)
+CBR_POLL_LOCK_TTL_SECONDS = env.int("CBR_POLL_LOCK_TTL_SECONDS", default=30)
+
 
 # django-allauth
 # ------------------------------------------------------------------------------

@@ -1,41 +1,46 @@
+from django.core.validators import RegexValidator
 from django.db.models import (
     CASCADE,
     CharField,
+    DateField,
     DateTimeField,
     DecimalField,
     ForeignKey,
     Index,
     Model,
-    TextChoices,
+    UniqueConstraint,
 )
 from django.utils.translation import gettext_lazy as _
 
 from tickfeeddmr.market_data.models.base import AssetBase
 
-
-class FiatSource(TextChoices):
-    """Источник валютных цен/справочных данных.
-
-    Используется и в `FiatCurrency.source` (основной источник валюты), и в
-    `FiatPriceSnapshot.source` (источник конкретной точки цены — у одной
-    валюты со временем могут накапливаться снапшоты из обоих источников).
-    """
-
-    MOEX = "MOEX", _("Московская биржа")
-    CBR = "CBR", _("Центральный банк РФ")
+CBR_ID_VALIDATOR = RegexValidator(
+    regex=r"^R\d{5}\Z",
+    message=_("Код ЦБ РФ: латинская R и пять цифр, например R01235."),
+)
 
 
 class FiatCurrency(AssetBase):
-    """Фиатная валюта, отслеживаемая через MOEX и/или ЦБ РФ."""
+    """Фиатная валюта, отслеживаемая через ЦБ РФ.
+
+    Поля `source` у этой модели и у `FiatPriceSnapshot` сознательно нет:
+    источник валютных цен ровно один (ЦБ РФ, MOEX-путь снят ещё на этапе
+    `0003_remove_fiatcurrency_moex_secid_and_more`) и другого не
+    планируется — колонка с единственным возможным значением несёт не
+    информацию, а константу.
+    """
 
     iso_code = CharField(_("ISO-код"), max_length=3, unique=True)
-    moex_secid = CharField(
-        _("SECID на MOEX"),
+    cbr_id = CharField(
+        _("код ЦБ РФ"),
         max_length=20,
-        blank=True,
-        help_text=_("Код инструмента на MOEX, если валюта там доступна."),
+        unique=True,
+        validators=[CBR_ID_VALIDATOR],
+        help_text=_(
+            "Внутренний код ЦБ РФ (атрибут ID в ответе XML_daily.asp, "
+            "например R01235) — по нему опрос курсов резолвит строки",
+        ),
     )
-    source = CharField(_("источник"), max_length=10, choices=FiatSource)
 
     class Meta:
         verbose_name = _("фиатная валюта")
@@ -46,12 +51,7 @@ class FiatCurrency(AssetBase):
 
 
 class FiatPriceSnapshot(Model):
-    """Точка цены `FiatCurrency` в конкретный момент времени.
-
-    `source` указывается для каждого снапшота отдельно, а не для валюты
-    целиком, потому что у одной валюты со временем могут накапливаться
-    точки и от MOEX, и от ЦБ.
-    """
+    """Точка цены `FiatCurrency` в конкретный момент времени."""
 
     asset = ForeignKey(
         FiatCurrency,
@@ -60,12 +60,26 @@ class FiatPriceSnapshot(Model):
         verbose_name=_("актив"),
     )
     price = DecimalField(_("цена"), max_digits=14, decimal_places=6)
-    source = CharField(_("источник"), max_length=10, choices=FiatSource)
+    effective_date = DateField(
+        _("дата курса"),
+        db_index=True,
+        help_text=_(
+            "Официальная дата, на которую котируется курс (атрибут Date "
+            "ValCurs у ЦБ РФ) — не дата фактического опроса: ЦБ публикует "
+            "курс на завтрашний рабочий день заранее, вечером текущего.",
+        ),
+    )
     timestamp = DateTimeField(_("метка времени"), db_index=True)
     created_at = DateTimeField(_("создано"), auto_now_add=True)
 
     class Meta:
         ordering = ["-timestamp"]
+        constraints = [
+            UniqueConstraint(
+                fields=["asset", "effective_date"],
+                name="unique_fiat_snapshot_asset_effective_date",
+            ),
+        ]
         indexes = [
             Index(fields=["asset", "-timestamp"], name="fiat_snap_asset_ts_idx"),
         ]
