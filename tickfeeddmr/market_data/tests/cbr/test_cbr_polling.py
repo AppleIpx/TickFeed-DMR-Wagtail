@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from tickfeeddmr.market_data.models import FiatPriceSnapshot
@@ -228,7 +229,10 @@ async def test_poll_rates_goes_to_network_when_only_today_has_snapshot(
     # решить, что валюта уже покрыта.
     fiat_currency.cbr_id = "R01235"
     await fiat_currency.asave(update_fields=["cbr_id"])
-    await FiatPriceSnapshotFactory.acreate(asset=fiat_currency, effective_date=TODAY)
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=TODAY,
+    )
     row = CbrRateRow(
         cbr_id="R01235",
         char_code="USD",
@@ -252,7 +256,7 @@ async def test_poll_rates_preflight_skips_when_target_already_covered(
     fiat_currency: FiatCurrency,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    await FiatPriceSnapshotFactory.acreate(
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
         asset=fiat_currency,
         effective_date=EFFECTIVE_DATE,
     )
@@ -290,9 +294,12 @@ async def test_poll_rates_not_yet_published_does_not_write(
 async def test_poll_rates_already_up_to_date_with_partial_coverage(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    covered = await FiatCurrencyFactory.acreate(cbr_id="R00001")
-    uncovered = await FiatCurrencyFactory.acreate(cbr_id="R00002")
-    await FiatPriceSnapshotFactory.acreate(asset=covered, effective_date=EFFECTIVE_DATE)
+    covered = await sync_to_async(FiatCurrencyFactory.create)(cbr_id="R00001")
+    uncovered = await sync_to_async(FiatCurrencyFactory.create)(cbr_id="R00002")
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=covered,
+        effective_date=EFFECTIVE_DATE,
+    )
     rows = [
         CbrRateRow(
             cbr_id=covered.cbr_id,
