@@ -1,12 +1,9 @@
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from decimal import Decimal
 
-if TYPE_CHECKING:
-    from decimal import Decimal
+import msgspec
 
 
-@dataclass(frozen=True, slots=True)
-class CbrRateRow:
+class CbrRateRow(msgspec.Struct, frozen=True):
     """Одна строка `ValCurs/Valute` — курс одной валюты на дату ответа."""
 
     cbr_id: str

@@ -1,10 +1,10 @@
 import asyncio
-from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from datetime import time as dt_time
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
+import msgspec
 from celery.utils.log import get_task_logger
 from django.conf import settings
 
@@ -38,8 +38,7 @@ validate_poll_budget(
 )
 
 
-@dataclass(frozen=True, slots=True)
-class CbrWriteResult:
+class CbrWriteResult(msgspec.Struct, frozen=True):
     """Итог записи курсов — сырые счётчики для лога вызывающей задачи."""
 
     written: int
