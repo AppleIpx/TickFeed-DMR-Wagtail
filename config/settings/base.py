@@ -6,6 +6,7 @@ from pathlib import Path
 
 import environ
 from django.core.exceptions import ImproperlyConfigured
+from dmr.openapi import OpenAPIConfig
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # tickfeeddmr/
@@ -62,7 +63,7 @@ else:
         },
     }
 
-DATABASES["default"]["ATOMIC_REQUESTS"] = True
+DATABASES["default"]["ATOMIC_REQUESTS"] = False
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 
 # URLS
@@ -106,6 +107,7 @@ THIRD_PARTY_APPS = [
     "modelcluster",
     "taggit",
     "django_celery_beat",
+    "dmr",
 ]
 
 LOCAL_APPS = [
@@ -299,6 +301,12 @@ CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/1")
 CELERY_RESULT_BACKEND = None
 CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# API (django-modern-rest)
+# ------------------------------------------------------------------------------
+DMR_SETTINGS = {
+    "openapi_config": OpenAPIConfig(title="TickFeedDmr API", version="0.1.0"),
+}
 
 # MARKET DATA
 # ------------------------------------------------------------------------------
