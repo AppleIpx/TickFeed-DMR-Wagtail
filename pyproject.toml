@@ -30,6 +30,7 @@ dependencies = [
   "gunicorn==26.1.0",
   "hiredis==3.4.1",
   "httpx==0.28.1",
+  "msgspec==0.21.1",
   "pillow==12.3.0",
   "psycopg[c]==3.3.4",
   "python-slugify==8.0.4",
@@ -154,6 +155,7 @@ lint.ignore = [
   # Deactivated because it can make the code slow:
   # https://github.com/astral-sh/ruff/issues/7871
 ]
+lint.flake8-type-checking.runtime-evaluated-base-classes = [ "msgspec.Struct" ]
 lint.isort.force-single-line = false
 
 # ==== pyproject-fmt ====

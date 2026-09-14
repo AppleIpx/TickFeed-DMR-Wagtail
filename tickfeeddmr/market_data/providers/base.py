@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING, Literal
+
+import msgspec
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
-    from datetime import datetime
-    from decimal import Decimal
 
 
-@dataclass(frozen=True, slots=True)
-class PricePoint:
+class PricePoint(msgspec.Struct, frozen=True):
     """Одна точка цены актива — текущая котировка или свеча истории."""
 
     trading_pair: str
@@ -18,8 +18,7 @@ class PricePoint:
     timestamp: datetime
 
 
-@dataclass(frozen=True, slots=True)
-class TradeEvent:
+class TradeEvent(msgspec.Struct, frozen=True):
     """Одна сделка, полученная из real-time стрима провайдера."""
 
     trading_pair: str

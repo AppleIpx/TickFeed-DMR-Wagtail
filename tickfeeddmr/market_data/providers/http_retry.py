@@ -4,10 +4,10 @@ import asyncio
 import logging
 import random
 import time
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import httpx
+import msgspec
 
 from tickfeeddmr.market_data.providers.exceptions import (
     ProviderConnectionError,
@@ -18,8 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
 
-@dataclass(frozen=True, slots=True)
-class RetryPolicy:
+class RetryPolicy(msgspec.Struct, frozen=True):
     """Параметры одного вызова `RetryingHttpClient.get` — своя копия на запрос."""
 
     max_attempts: int

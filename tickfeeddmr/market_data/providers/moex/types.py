@@ -1,18 +1,17 @@
 """Строки ответов ISS MOEX, нормализованные `MoexIssClient`.
 
-Отдельный файл от `client.py`: это чистые данные (frozen-дата-классы),
+Отдельный файл от `client.py`: это чистые данные (frozen `msgspec.Struct`),
 без сетевого/парсинг-кода — `client.py` создаёт их в
 `_board_row_from_columns`/`_trade_row_from_columns`/
 `_candle_row_from_columns`, а `provider.py`/`services/moex_ingest.py`
 используют как типы для аннотаций и полей.
 """
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from datetime import datetime
+from decimal import Decimal
+from typing import Literal
 
-if TYPE_CHECKING:
-    from datetime import datetime
-    from decimal import Decimal
+import msgspec
 
 # ISS не публикует исчерпывающий список кодов TRADINGSTATUS в
 # машиночитаемом виде. "T" ("торги идут") — единственное значение,
@@ -23,8 +22,7 @@ if TYPE_CHECKING:
 TRADING_ACTIVE_STATUS = "T"
 
 
-@dataclass(frozen=True, slots=True)
-class MoexBoardRow:
+class MoexBoardRow(msgspec.Struct, frozen=True):
     """Одна строка снимка борда ISS (`iss.only=marketdata`)."""
 
     secid: str
@@ -45,8 +43,7 @@ class MoexBoardRow:
         return self.trading_status == TRADING_ACTIVE_STATUS
 
 
-@dataclass(frozen=True, slots=True)
-class MoexTradeRow:
+class MoexTradeRow(msgspec.Struct, frozen=True):
     """Одна строка ленты сделок ISS"""
 
     trade_id: int
@@ -57,8 +54,7 @@ class MoexTradeRow:
     period: str
 
 
-@dataclass(frozen=True, slots=True)
-class MoexCandleRow:
+class MoexCandleRow(msgspec.Struct, frozen=True):
     """Одна свеча ISS."""
 
     open: Decimal

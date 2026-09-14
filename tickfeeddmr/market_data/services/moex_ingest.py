@@ -14,8 +14,9 @@
 """
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+import msgspec
 
 from tickfeeddmr.market_data.models import StockAsset, StockPriceSnapshot, StockTrade
 
@@ -27,8 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True, slots=True)
-class BoardSnapshotWriteResult:
+class BoardSnapshotWriteResult(msgspec.Struct, frozen=True):
     """Итог записи снимка борда — сырые счётчики для лога вызывающей задачи."""
 
     written: int
