@@ -1,5 +1,6 @@
-from django.urls import include, path
+from dmr.openapi import build_schema
+from dmr.routing import Router
 
-urlpatterns = [
-    path("users/", include("tickfeeddmr.users.urls", namespace="users")),
-]
+router = Router("api/")
+
+schema = build_schema(router)
