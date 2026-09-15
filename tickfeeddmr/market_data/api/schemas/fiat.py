@@ -1,5 +1,4 @@
 from datetime import date
-from decimal import Decimal
 from typing import Literal
 
 import msgspec
@@ -19,7 +18,7 @@ class FiatRateOut(msgspec.Struct, frozen=True):
 
     asset: AssetOut
     iso_code: str
-    rate: Decimal
+    rate: str
     effective_date: date
     source: Literal["ЦБ РФ"]
     freshness: DataFreshness
@@ -29,4 +28,4 @@ class FiatRatePointOut(PricePointBase, frozen=True):
     """Точка истории курса валюты."""
 
     effective_date: date
-    rate: Decimal
+    rate: str
