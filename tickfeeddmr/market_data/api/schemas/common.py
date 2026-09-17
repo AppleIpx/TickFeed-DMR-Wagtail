@@ -1,7 +1,9 @@
 from datetime import datetime
-from decimal import Decimal
+from typing import Annotated
 
 import msgspec
+
+from tickfeeddmr.market_data.services.queries.cursor import DEFAULT_LIMIT, MAX_LIMIT
 
 
 class AssetOut(msgspec.Struct, frozen=True):
@@ -27,7 +29,22 @@ class PricePointBase(msgspec.Struct, frozen=True):
 
 
 class PricePointOut(PricePointBase, frozen=True):
-    """Точка истории цены крипто-актива."""
+    """Точка истории цены крипто-актива"""
 
-    price: Decimal
-    volume: Decimal | None
+    price: str
+    volume: str | None
+
+
+class CursorPage[ItemT](msgspec.Struct, frozen=True):
+    """Курсорная страница списочного ответа"""
+
+    items: list[ItemT]
+    next_cursor: str | None
+    freshness: DataFreshness
+
+
+class CursorQuery(msgspec.Struct, frozen=True):
+    """Query-параметры курсорной пагинации ленты сделок"""
+
+    cursor: str | None = None
+    limit: Annotated[int, msgspec.Meta(ge=1, le=MAX_LIMIT)] = DEFAULT_LIMIT

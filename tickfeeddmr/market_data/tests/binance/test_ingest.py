@@ -101,3 +101,15 @@ async def test_write_snapshots_empty_list_returns_zero_without_querying() -> Non
     written = await CryptoTradeIngestService(exchange="BINANCE").write_snapshots([])
 
     assert written == 0
+
+
+async def test_write_snapshots_is_idempotent_on_rerun(
+    crypto_asset: CryptoAsset,
+) -> None:
+    service = CryptoTradeIngestService(exchange=crypto_asset.exchange)
+    event = _event(crypto_asset.trading_pair, trade_id="1")
+
+    await service.write_snapshots([event])
+    await service.write_snapshots([event])
+
+    assert await CryptoPriceSnapshot.objects.filter(asset=crypto_asset).acount() == 1

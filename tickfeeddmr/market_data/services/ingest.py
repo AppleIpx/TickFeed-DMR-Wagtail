@@ -18,12 +18,14 @@ class CryptoTradeIngestService:
         self._exchange = exchange
 
     async def write_snapshots(self, events: Sequence[TradeEvent]) -> int:
-        """Записать `events` как `CryptoPriceSnapshot`, вернуть число записанных строк.
+        """Записать `events` как `CryptoPriceSnapshot`.
 
-        `side` не персистится — в этом этапе `CryptoPriceSnapshot` хранит
-        только price/volume/timestamp. События с неизвестным
-        `trading_pair` (нет активного `CryptoAsset` для `self._exchange`)
-        логируются и пропускаются, а не создают актив на лету.
+        Возвращает число подготовленных строк.
+
+
+        События с неизвестным `trading_pair` (нет активного `CryptoAsset`
+        для `self._exchange`) логируются и пропускаются, а не создают
+        актив на лету.
         """
         if not events:
             return 0
@@ -51,9 +53,14 @@ class CryptoTradeIngestService:
                     asset=asset,
                     price=event.price,
                     volume=event.volume,
+                    side=event.side,
+                    trade_id=event.trade_id,
                     timestamp=event.timestamp,
                 ),
             )
 
-        await CryptoPriceSnapshot.objects.abulk_create(snapshots)
+        await CryptoPriceSnapshot.objects.abulk_create(
+            snapshots,
+            ignore_conflicts=True,
+        )
         return len(snapshots)
