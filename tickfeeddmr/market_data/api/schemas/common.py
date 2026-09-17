@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 import msgspec
@@ -29,10 +29,44 @@ class PricePointBase(msgspec.Struct, frozen=True):
 
 
 class PricePointOut(PricePointBase, frozen=True):
-    """Точка истории цены крипто-актива"""
+    """Дневная точка истории цены крипто-актива (CryptoDailyCandle).
 
+    `close`, не `price`: симметрично `StockPricePointOut`, у которой
+    OHLC — не экстремумы сессии (как у `intraday`), а настоящая дневная
+    свеча, то же самое, что и здесь.
+    """
+
+    open: str
+    high: str
+    low: str
+    close: str
+    volume: str
+
+
+class LinearPricePointOut(msgspec.Struct, frozen=True):
+    """Точка `intraday` — общая линейная схема для крипты и акций."""
+
+    timestamp: datetime
     price: str
-    volume: str | None
+    volume: str
+
+
+class IntradayOut(msgspec.Struct, frozen=True):
+    """Ответ `intraday` — точки за скользящие 24 часа + одна свежесть на весь ответ."""
+
+    points: list[LinearPricePointOut]
+    freshness: DataFreshness
+
+
+class HistoryQuery(
+    msgspec.Struct,
+    frozen=True,
+    rename={"date_from": "from", "date_to": "to"},
+):
+    """Query-параметры `history` — период опционален, по умолчанию последний год."""
+
+    date_from: date | None = None
+    date_to: date | None = None
 
 
 class CursorPage[ItemT](msgspec.Struct, frozen=True):

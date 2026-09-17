@@ -22,12 +22,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from zoneinfo import ZoneInfo
+
+from django.conf import settings
 
 if TYPE_CHECKING:
     from datetime import date
 
-MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+MOSCOW_TZ = settings.MOSCOW_TZ
 
 
 def board_updatetime_to_utc(trading_day: date, updatetime: str) -> datetime:

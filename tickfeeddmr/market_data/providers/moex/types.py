@@ -13,13 +13,14 @@ from typing import Literal
 
 import msgspec
 
-# ISS не публикует исчерпывающий список кодов TRADINGSTATUS в
-# машиночитаемом виде. "T" ("торги идут") — единственное значение,
-# подтверждённое на живых данных при подготовке этапа 4; остальные
-# трактуются как "торги не идут". Если это окажется неверным для другого
-# кода, лог `poll_board` (`services/moex_polling/board.py`) с сырым
-# TRADINGSTATUS сделает это видимым.
-TRADING_ACTIVE_STATUS = "T"
+# Официальный перечень `TTradingStatus` (документация MOEX ASTS
+# `Equities59_Info`, интерфейс `Info` v.59): "T" — торговая сессия,
+# "L" — аукцион закрытия, "E" — торги по цене аукциона закрытия. Все три
+# статуса нужны для записи снимка борда (этап 8b, правка этапа 4):
+# ограничение только статусом "T" теряло аукцион закрытия и официальную
+# цену закрытия дня (18:40–18:50 МСК). Остальные значения перечня
+# (N/O/C/F/B/D/I/S и фазы аукционов) трактуются как "торги не идут".
+TRADING_ACTIVE_STATUSES = frozenset({"T", "L", "E"})
 
 
 class MoexBoardRow(msgspec.Struct, frozen=True):
@@ -40,7 +41,7 @@ class MoexBoardRow(msgspec.Struct, frozen=True):
 
     @property
     def is_trading(self) -> bool:
-        return self.trading_status == TRADING_ACTIVE_STATUS
+        return self.trading_status in TRADING_ACTIVE_STATUSES
 
 
 class MoexTradeRow(msgspec.Struct, frozen=True):

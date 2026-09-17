@@ -5,12 +5,15 @@ from tickfeeddmr.market_data.api.schemas.common import (
     AssetOut,
     CursorPage,
     DataFreshness,
+    IntradayOut,
+    LinearPricePointOut,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from tickfeeddmr.market_data.models import AssetBase
+    from tickfeeddmr.market_data.services.queries.types import IntradayPoint
 
 
 def asset_out(asset: AssetBase) -> AssetOut:
@@ -47,6 +50,35 @@ def trades_page_out[T](
         next_cursor=next_cursor,
         freshness=freshness(
             timestamp=datetime.now(UTC),
+            data_delay_seconds=data_delay_seconds,
+        ),
+    )
+
+
+def intraday_out(
+    points: Sequence[IntradayPoint],
+    *,
+    data_delay_seconds: int,
+) -> IntradayOut:
+    """Собрать ответ `intraday` — одна свежесть на весь ответ, не на точку.
+
+    Тело одинаково для крипты и акций (общая `IntradayPoint`/
+    `LinearPricePointOut`) — домен-специфичен только источник точек
+    (`services/queries/{crypto,stock}.py::get_intraday`).
+    """
+    items = [
+        LinearPricePointOut(
+            timestamp=point.timestamp,
+            price=str(point.price),
+            volume=str(point.volume),
+        )
+        for point in points
+    ]
+    latest = max((point.timestamp for point in points), default=None)
+    return IntradayOut(
+        points=items,
+        freshness=freshness(
+            timestamp=latest or datetime.now(UTC),
             data_delay_seconds=data_delay_seconds,
         ),
     )

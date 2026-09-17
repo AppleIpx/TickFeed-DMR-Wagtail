@@ -11,6 +11,9 @@ from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
     AssetOut,
     CursorPage,
     CursorQuery,
+    HistoryQuery,
+    IntradayOut,
+    PricePointOut,
 )
 from tickfeeddmr.market_data.api.schemas.crypto import (  # noqa: TC001
     CryptoCurrentOut,
@@ -58,3 +61,29 @@ class CryptoTradesController(BaseController):
         )
         items = [crypto_presenters.trade_out(row) for row in rows]
         return crypto_presenters.trades_page(items, next_cursor)
+
+
+class CryptoIntradayController(BaseController):
+    """`GET /api/crypto/assets/{symbol}/intraday` — скользящие последние 24 часа."""
+
+    @modify(tags=_TAGS)
+    async def get(self, parsed_path: Path[SymbolPath]) -> IntradayOut:
+        points = await crypto_queries.get_intraday(parsed_path.symbol)
+        return crypto_presenters.intraday(points)
+
+
+class CryptoHistoryController(BaseController):
+    """`GET /api/crypto/assets/{symbol}/history` — дневные свечи за период."""
+
+    @modify(tags=_TAGS)
+    async def get(
+        self,
+        parsed_path: Path[SymbolPath],
+        parsed_query: Query[HistoryQuery],
+    ) -> list[PricePointOut]:
+        candles = await crypto_queries.get_history(
+            parsed_path.symbol,
+            date_from=parsed_query.date_from,
+            date_to=parsed_query.date_to,
+        )
+        return crypto_presenters.history_out(candles)

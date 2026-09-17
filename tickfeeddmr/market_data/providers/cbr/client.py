@@ -7,18 +7,19 @@ from typing import TYPE_CHECKING
 import httpx
 from defusedxml import ElementTree
 
-from tickfeeddmr.market_data.providers.cbr.types import CbrRateRow
+from tickfeeddmr.market_data.providers.cbr.types import CbrHistoryRateRow, CbrRateRow
 from tickfeeddmr.market_data.providers.exceptions import ProviderResponseError
 from tickfeeddmr.market_data.providers.http_retry import RetryingHttpClient, RetryPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from datetime import date
     from xml.etree.ElementTree import Element
 
 logger = logging.getLogger(__name__)
 
 DAILY_RATES_PATH = "/scripts/XML_daily.asp"
+DYNAMIC_RATES_PATH = "/scripts/XML_dynamic.asp"
 
 CONNECT_TIMEOUT_SECONDS = 5.0
 REQUEST_TIMEOUT_SECONDS = 10.0
@@ -81,7 +82,34 @@ class CbrDailyRatesClient:
         response = await self._get(DAILY_RATES_PATH)
         return _parse_daily_rates(response.content)
 
-    async def _get(self, path: str) -> httpx.Response:
+    async def get_dynamic_rates(
+        self,
+        cbr_id: str,
+        *,
+        date_from: date,
+        date_to: date,
+    ) -> Sequence[CbrHistoryRateRow]:
+        """История курса одной валюты за `[date_from, date_to]` (включительно).
+
+        Одним запросом — `XML_dynamic.asp` не пагинирует и отдаёт весь
+        запрошенный диапазон целиком (вся история одной валюты — не
+        """
+        response = await self._get(
+            DYNAMIC_RATES_PATH,
+            params={
+                "date_req1": date_from.strftime("%d/%m/%Y"),
+                "date_req2": date_to.strftime("%d/%m/%Y"),
+                "VAL_NM_RQ": cbr_id,
+            },
+        )
+        return _parse_dynamic_rates(response.content, cbr_id=cbr_id)
+
+    async def _get(
+        self,
+        path: str,
+        *,
+        params: Mapping[str, str] | None = None,
+    ) -> httpx.Response:
         """GET с повторами; возвращает только успешный (не-ошибочный) ответ."""
         policy = RetryPolicy(
             max_attempts=MAX_ATTEMPTS,
@@ -96,7 +124,7 @@ class CbrDailyRatesClient:
             log_label="ЦБ РФ",
             error_label="CBR",
         )
-        return await self._http.get(path, policy=policy)
+        return await self._http.get(path, params=params, policy=policy)
 
 
 def _parse_daily_rates(content: bytes) -> tuple[date, Sequence[CbrRateRow]]:
@@ -143,3 +171,44 @@ def _row_from_element(valute: Element) -> CbrRateRow | None:
         nominal=nominal,
         rate=rate,
     )
+
+
+def _parse_dynamic_rates(content: bytes, *, cbr_id: str) -> Sequence[CbrHistoryRateRow]:
+    """Разобрать тело `XML_dynamic.asp` — построчную историю курса одной валюты.
+
+    Строки, которые не удалось разобрать, пропускаются с одной строкой
+    WARNING на строку — тем же способом, что и `_parse_daily_rates`.
+    """
+    root = ElementTree.fromstring(content)
+    rows = []
+    for record in root.findall("Record"):
+        row = _history_row_from_element(record, cbr_id=cbr_id)
+        if row is not None:
+            rows.append(row)
+    return rows
+
+
+def _history_row_from_element(
+    record: Element,
+    *,
+    cbr_id: str,
+) -> CbrHistoryRateRow | None:
+    date_attr = record.attrib.get("Date")
+    vunit_rate_text = record.findtext("VunitRate")
+    if not (date_attr and vunit_rate_text):
+        logger.warning(
+            f"ЦБ РФ: пропущена строка Record без обязательных полей ({cbr_id})",
+        )
+        return None
+    try:
+        effective_date = (
+            datetime.strptime(date_attr, "%d.%m.%Y").replace(tzinfo=UTC).date()
+        )
+        rate = Decimal(vunit_rate_text.replace(",", "."))
+    except (ValueError, InvalidOperation) as exc:
+        logger.warning(
+            f"ЦБ РФ: не удалось разобрать историческую запись {cbr_id} "
+            f"за {date_attr}: {exc}",
+        )
+        return None
+    return CbrHistoryRateRow(effective_date=effective_date, rate=rate)
