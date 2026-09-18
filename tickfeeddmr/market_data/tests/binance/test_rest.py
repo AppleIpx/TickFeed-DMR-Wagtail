@@ -155,7 +155,7 @@ async def test_get_klines_passes_end_time_when_given() -> None:
 
 async def test_get_klines_raises_provider_error_on_bad_status() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(500, text="boom")
+        return httpx.Response(451, text="rate limited")
 
     client = _client(handler)
     try:
