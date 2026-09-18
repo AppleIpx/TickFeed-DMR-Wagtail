@@ -58,6 +58,7 @@ services:
         condition: service_started
     ports: []
     command: python manage.py stream_binance
+    restart: unless-stopped
 
   market_data_consumer:
     <<: *django
@@ -70,6 +71,7 @@ services:
         condition: service_started
     ports: []
     command: python manage.py consume_market_data_stream
+    restart: unless-stopped
 
   celeryworker:
     <<: *django
