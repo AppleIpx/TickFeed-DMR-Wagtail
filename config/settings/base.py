@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import environ
 from django.core.exceptions import ImproperlyConfigured
@@ -310,6 +311,13 @@ DMR_SETTINGS = {
 
 # MARKET DATA
 # ------------------------------------------------------------------------------
+# Доменная временная зона: граница торгового дня (свечи, история, курсы
+# ЦБ) везде считается по Москве — как и `CELERY_TIMEZONE` выше, независимо
+# от `TIME_ZONE` проекта (UTC). Единый объект вместо `ZoneInfo("Europe/Moscow")`
+# в каждом модуле — `zoneinfo.ZoneInfo` кэширует инстансы по ключу, так что
+# дублирование не создавало разных объектов, но текст дублировался.
+MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+
 # Binance REST/WebSocket endpoints used by `tickfeeddmr.market_data.providers.binance`.
 BINANCE_REST_BASE_URL = env("BINANCE_REST_BASE_URL", default="https://api.binance.com")
 BINANCE_WS_BASE_URL = env(
@@ -409,6 +417,41 @@ CBR_DAILY_RATES_BASE_URL = env("CBR_DAILY_RATES_BASE_URL", default="https://www.
 CBR_POLL_BUDGET_SECONDS = env.int("CBR_POLL_BUDGET_SECONDS", default=20)
 CBR_POLL_LOCK_TTL_SECONDS = env.int("CBR_POLL_LOCK_TTL_SECONDS", default=30)
 
+# ДНЕВНЫЕ СВЕЧИ
+# ------------------------------------------------------------------------------
+# Один и тот же механизм догона (сигнал + ночная задача) на три домена. Бюджет/TTL — per-domain (разная
+# стоимость запроса: крипта ~4 запроса на полную историю, акции ~10 плюс
+# постраничное дочитывание, ЦБ — 1 запрос на валюту); лимит числа активов за
+# ночной прогон — один общий, он же основной механизм защиты
+# `poll_moex_board`/остальных периодических задач от вытеснения долгим прогоном
+MARKET_DATA_DAILY_CANDLES_MAX_ASSETS_PER_RUN = env.int(
+    "MARKET_DATA_DAILY_CANDLES_MAX_ASSETS_PER_RUN",
+    default=50,
+)
+CRYPTO_DAILY_CANDLES_POLL_BUDGET_SECONDS = env.int(
+    "CRYPTO_DAILY_CANDLES_POLL_BUDGET_SECONDS",
+    default=120,
+)
+CRYPTO_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS = env.int(
+    "CRYPTO_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS",
+    default=140,
+)
+STOCK_DAILY_CANDLES_POLL_BUDGET_SECONDS = env.int(
+    "STOCK_DAILY_CANDLES_POLL_BUDGET_SECONDS",
+    default=300,
+)
+STOCK_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS = env.int(
+    "STOCK_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS",
+    default=330,
+)
+FIAT_DAILY_CANDLES_POLL_BUDGET_SECONDS = env.int(
+    "FIAT_DAILY_CANDLES_POLL_BUDGET_SECONDS",
+    default=60,
+)
+FIAT_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS = env.int(
+    "FIAT_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS",
+    default=75,
+)
 
 # django-allauth
 # ------------------------------------------------------------------------------

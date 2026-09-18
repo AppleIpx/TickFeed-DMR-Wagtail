@@ -1,12 +1,13 @@
 import logging
 import ssl
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Literal, cast
 from urllib.parse import quote
 
 import httpx
 
+from tickfeeddmr.market_data.providers.exceptions import ProviderResponseError
 from tickfeeddmr.market_data.providers.http_retry import RetryingHttpClient, RetryPolicy
 from tickfeeddmr.market_data.providers.moex.timeutils import (
     MOSCOW_TZ,
@@ -21,7 +22,6 @@ from tickfeeddmr.market_data.providers.moex.types import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
-    from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,9 @@ TRADES_PATH_TEMPLATE = (
 )
 CANDLES_PATH_TEMPLATE = (
     "/iss/engines/stock/markets/shares/securities/{secid}/candles.json"
+)
+CANDLE_BORDERS_PATH_TEMPLATE = (
+    "/iss/engines/stock/markets/shares/securities/{secid}/candleborders.json"
 )
 CONNECT_TIMEOUT_SECONDS = 5.0
 REQUEST_TIMEOUT_SECONDS = 10.0
@@ -65,6 +68,12 @@ ERROR_REASON_MAX_CHARS = 200
 # вызывающим кодом (`poll_trades`), чтобы отличить последнюю страницу
 # от неполной: если пришло меньше строк, чем это, дальше читать нечего.
 TRADES_PAGE_ROWS = 5000
+
+# Размер страницы `candles.json` — как и `TRADES_PAGE_ROWS`, используется
+# вызывающим кодом (`services/daily_candles/stock.py`) для постраничного
+# дочитывания полной истории (SBER с 2007 года — около 4800 дневных
+# свечей, страница `candles.json` этот объём одним запросом не отдаёт).
+CANDLES_PAGE_ROWS = 500
 
 
 class MoexIssClient:
@@ -156,18 +165,27 @@ class MoexIssClient:
         start: datetime,
         end: datetime | None,
         interval: str,
+        start_index: int = 0,
     ) -> Sequence[MoexCandleRow]:
         """Одна страница свечей за `[start, end)`.
 
-        Постраничность нескольких вызовов — на вызывающем коде.
+        `start_index` — смещение страницы ISS (`start=`), не путать с
+        `start` (началом диапазона дат): у `candles.json` строк в ответе
+        не больше `CANDLES_PAGE_ROWS`, при более длинной истории (акции —
+        тысячи дневных свечей) нужно дочитывание со сдвигом `start_index`
+        на число уже полученных строк — эта постраничность на вызывающем
+        коде (`services/daily_candles/stock.py`), сам метод отдаёт только
+        одну страницу.
         """
-        params: dict[str, str] = {
+        params: dict[str, str | int] = {
             "iss.meta": "off",
             "interval": interval,
             "from": start.date().isoformat(),
         }
         if end is not None:
             params["till"] = end.date().isoformat()
+        if start_index:
+            params["start"] = start_index
         response = await self._get(
             CANDLES_PATH_TEMPLATE.format(secid=quote(secid, safe="")),
             params=params,
@@ -175,6 +193,34 @@ class MoexIssClient:
         block = response.json()["candles"]
         columns = block["columns"]
         return [self._candle_row_from_columns(columns, row) for row in block["data"]]
+
+    async def get_candle_borders(
+        self,
+        secid: str,
+        *,
+        interval: str,
+    ) -> tuple[date, date]:
+        """Первая и последняя доступная дата свечей `interval` по бумаге.
+
+        Нужна только для первой полной загрузки нового актива
+        `services/daily_candles/stock.py` — узнать начало истории без
+        ручного ввода даты. Ночной догон этим методом не пользуется:
+        курсор для него — дата последней свечи, уже лежащей в БД.
+        """
+        response = await self._get(
+            CANDLE_BORDERS_PATH_TEMPLATE.format(secid=quote(secid, safe="")),
+            params={"iss.meta": "off"},
+        )
+        block = response.json()["borders"]
+        columns = block["columns"]
+        for row in block["data"]:
+            get = _column_getter(columns, row)
+            if str(get("interval")) == interval:
+                begin = cast("str", get("begin")).split(" ")[0]
+                end = cast("str", get("end")).split(" ")[0]
+                return date.fromisoformat(begin), date.fromisoformat(end)
+        msg = f"MOEX ISS candleborders has no interval={interval} row for {secid}"
+        raise ProviderResponseError(msg)
 
     async def _get(
         self,

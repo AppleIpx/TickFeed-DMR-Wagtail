@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
 import pytest
 
+from tickfeeddmr.market_data import tasks
 from tickfeeddmr.market_data.tests.factories import (
     CryptoAssetFactory,
     CryptoPriceSnapshotFactory,
@@ -24,6 +26,34 @@ if TYPE_CHECKING:
         StockPriceSnapshot,
         StockTrade,
     )
+
+
+_DAILY_CANDLES_CATCH_UP_TASK_NAMES = (
+    "catch_up_crypto_asset_history",
+    "catch_up_stock_asset_history",
+    "catch_up_fiat_asset_history",
+    "catch_up_all_crypto_daily_candles",
+    "catch_up_all_stock_daily_candles",
+    "catch_up_all_fiat_daily_candles",
+)
+
+
+@pytest.fixture(autouse=True)
+def _mock_daily_candles_catch_up_tasks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Не даёт сигналам реально ходить в сеть в тестах.
+
+    `CELERY_TASK_ALWAYS_EAGER=True` в тестах выполняет `.delay()`
+    синхронно, в этом же процессе; тесты, использующие
+    `django_db(transaction=True)` (например `tests/api/`), реально
+    выполняют колбэки `transaction.on_commit` — без этой заглушки любая
+    фабрика, создающая `CryptoAsset`/`StockAsset`/`FiatCurrency`, вызвала
+    бы настоящий HTTP-запрос к Binance/MOEX/ЦБ РФ через
+    `post_save`-сигнал (`market_data/signals.py`).
+    """
+    for task_name in _DAILY_CANDLES_CATCH_UP_TASK_NAMES:
+        task = getattr(tasks, task_name)
+        monkeypatch.setattr(task, "delay", MagicMock())
+        monkeypatch.setattr(task, "apply_async", MagicMock())
 
 
 @pytest.fixture

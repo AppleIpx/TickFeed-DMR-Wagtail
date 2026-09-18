@@ -11,10 +11,13 @@ from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
     AssetOut,
     CursorPage,
     CursorQuery,
+    HistoryQuery,
+    IntradayOut,
 )
 from tickfeeddmr.market_data.api.schemas.stock import (  # noqa: TC001
     SecidPath,
     StockCurrentOut,
+    StockPricePointOut,
     StockTradeOut,
 )
 from tickfeeddmr.market_data.services.queries import stock as stock_queries
@@ -58,3 +61,29 @@ class StockTradesController(BaseController):
         )
         items = [stock_presenters.trade_out(row) for row in rows]
         return stock_presenters.trades_page(items, next_cursor)
+
+
+class StockIntradayController(BaseController):
+    """`GET /api/stocks/{secid}/intraday` — скользящие последние 24 часа."""
+
+    @modify(tags=_TAGS)
+    async def get(self, parsed_path: Path[SecidPath]) -> IntradayOut:
+        points = await stock_queries.get_intraday(parsed_path.secid)
+        return stock_presenters.intraday(points)
+
+
+class StockHistoryController(BaseController):
+    """`GET /api/stocks/{secid}/history` — дневные свечи за период."""
+
+    @modify(tags=_TAGS)
+    async def get(
+        self,
+        parsed_path: Path[SecidPath],
+        parsed_query: Query[HistoryQuery],
+    ) -> list[StockPricePointOut]:
+        candles = await stock_queries.get_history(
+            parsed_path.secid,
+            date_from=parsed_query.date_from,
+            date_to=parsed_query.date_to,
+        )
+        return stock_presenters.history_out(candles)

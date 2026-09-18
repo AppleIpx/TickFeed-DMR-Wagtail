@@ -3,6 +3,8 @@ from dmr.routing import Router, path
 from tickfeeddmr.market_data.api.controllers.stock import (
     StockAssetCurrentController,
     StockAssetListController,
+    StockHistoryController,
+    StockIntradayController,
     StockTradesController,
 )
 
@@ -23,6 +25,16 @@ router = Router(
             "<str:secid>/trades",
             StockTradesController.as_view(),
             name="stock-asset-trades",
+        ),
+        path(
+            "<str:secid>/intraday",
+            StockIntradayController.as_view(),
+            name="stock-asset-intraday",
+        ),
+        path(
+            "<str:secid>/history",
+            StockHistoryController.as_view(),
+            name="stock-asset-history",
         ),
     ],
 )

@@ -2,7 +2,6 @@ import asyncio
 from datetime import UTC, date, datetime, timedelta
 from datetime import time as dt_time
 from typing import TYPE_CHECKING
-from zoneinfo import ZoneInfo
 
 import msgspec
 from celery.utils.log import get_task_logger
@@ -30,7 +29,7 @@ CBR_LOCK_KEY = "market_data:cbr:lock:poll_rates"
 # дня по московскому времени (тот же часовой пояс, что и `CELERY_TIMEZONE`,
 # см. "Celery" в `CLAUDE.md`: любой домен-специфичный расчёт дат — явно в
 # `Europe/Moscow`, а не в `TIME_ZONE` проекта).
-MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+MOSCOW_TZ = settings.MOSCOW_TZ
 
 validate_poll_budget(
     settings.CBR_POLL_BUDGET_SECONDS,

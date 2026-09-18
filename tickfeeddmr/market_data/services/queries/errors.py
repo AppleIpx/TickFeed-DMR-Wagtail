@@ -1,10 +1,3 @@
-"""Доменные ошибки read-сервисов API (этап 8a).
-
-Наследуются от `config.api_base.DomainError`, а не от голого `Exception` —
-только так `BaseController.handle_async_error` их узнаёт и не путает с
-собственными исключениями DMR (см. докстринг `DomainError`).
-"""
-
 from http import HTTPStatus
 
 from config.api_base import DomainError
@@ -39,5 +32,11 @@ class TradesNotTrackedError(DomainError):
 
 class InvalidCursorError(DomainError):
     """Курсор не парсится — это ошибка запроса (422), а не «не найдено» (404)."""
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class InvalidPeriodError(DomainError):
+    """`from` больше `to` в запросе `history` — ошибка запроса (422)."""
 
     status_code = HTTPStatus.UNPROCESSABLE_ENTITY

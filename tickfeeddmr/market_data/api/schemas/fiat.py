@@ -13,6 +13,12 @@ CBR_DATA_DELAY_SECONDS = 86_400
 CBR_SOURCE_LABEL = "ЦБ РФ"
 
 
+class IsoCodePath(msgspec.Struct, frozen=True):
+    """Path-параметр ручки истории курса валюты — ISO-код."""
+
+    iso_code: str
+
+
 class FiatRateOut(msgspec.Struct, frozen=True):
     """Курс валюты ЦБ РФ"""
 

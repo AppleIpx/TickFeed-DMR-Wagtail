@@ -2,10 +2,12 @@ from wagtail_modeladmin.options import ModelAdmin, ModelAdminGroup, modeladmin_r
 
 from tickfeeddmr.market_data.models import (
     CryptoAsset,
+    CryptoDailyCandle,
     CryptoPriceSnapshot,
     FiatCurrency,
     FiatPriceSnapshot,
     StockAsset,
+    StockDailyCandle,
     StockPriceSnapshot,
     StockTrade,
 )
@@ -83,9 +85,25 @@ class StockTradeAdmin(ModelAdmin):
     list_filter = ["asset", "side"]
 
 
+class CryptoDailyCandleAdmin(ModelAdmin):
+    model = CryptoDailyCandle
+    menu_icon = "date"
+    date_hierarchy = "date"
+    list_display = ["asset", "date", "open", "high", "low", "close", "volume"]
+    list_filter = ["asset"]
+
+
+class StockDailyCandleAdmin(ModelAdmin):
+    model = StockDailyCandle
+    menu_icon = "date"
+    date_hierarchy = "date"
+    list_display = ["asset", "date", "open", "high", "low", "close", "volume"]
+    list_filter = ["asset"]
+
+
 @modeladmin_register
 class SnapshotsGroup(ModelAdminGroup):
-    """Снапшоты цен (крипта/валюта/акции) одним пунктом меню в админке.
+    """Снапшоты цен и дневные свечи (крипта/валюта/акции) одним пунктом меню.
 
     `StockTrade` сюда сознательно не входит — это не снапшот (сводка на
     момент времени), а отдельная сделка купли-продажи, у неё свой пункт
@@ -94,4 +112,10 @@ class SnapshotsGroup(ModelAdminGroup):
 
     menu_label = "Снапшоты"
     menu_icon = "time"
-    items = (CryptoPriceSnapshotAdmin, FiatPriceSnapshotAdmin, StockPriceSnapshotAdmin)
+    items = (
+        CryptoPriceSnapshotAdmin,
+        FiatPriceSnapshotAdmin,
+        StockPriceSnapshotAdmin,
+        CryptoDailyCandleAdmin,
+        StockDailyCandleAdmin,
+    )

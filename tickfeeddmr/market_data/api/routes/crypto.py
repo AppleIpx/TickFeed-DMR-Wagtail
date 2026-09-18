@@ -3,6 +3,8 @@ from dmr.routing import Router, path
 from tickfeeddmr.market_data.api.controllers.crypto import (
     CryptoAssetCurrentController,
     CryptoAssetListController,
+    CryptoHistoryController,
+    CryptoIntradayController,
     CryptoTradesController,
 )
 
@@ -23,6 +25,16 @@ router = Router(
             "assets/<str:symbol>/trades",
             CryptoTradesController.as_view(),
             name="crypto-asset-trades",
+        ),
+        path(
+            "assets/<str:symbol>/intraday",
+            CryptoIntradayController.as_view(),
+            name="crypto-asset-intraday",
+        ),
+        path(
+            "assets/<str:symbol>/history",
+            CryptoHistoryController.as_view(),
+            name="crypto-asset-history",
         ),
     ],
 )

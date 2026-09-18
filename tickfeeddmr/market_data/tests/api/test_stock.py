@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from decimal import Decimal
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
@@ -8,6 +10,8 @@ from asgiref.sync import sync_to_async
 
 from tickfeeddmr.market_data.tests.factories import (
     StockAssetFactory,
+    StockDailyCandleFactory,
+    StockPriceSnapshotFactory,
     StockTradeFactory,
 )
 
@@ -114,3 +118,74 @@ async def test_trades_returns_period_as_raw_value(
     assert len(body["items"]) == 1
     assert body["items"][0]["period"] == "N"
     assert body["items"][0]["trade_id"] == trade.trade_id
+
+
+async def test_intraday_unknown_secid_returns_404(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    response = await dmr_async_client.get("/api/stocks/UNKNOWN/intraday")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+async def test_intraday_returns_board_snapshot_as_is_not_aggregated(
+    dmr_async_client: DMRAsyncClient,
+    stock_asset: StockAsset,
+) -> None:
+    now = datetime.now(UTC)
+    snapshot = await sync_to_async(StockPriceSnapshotFactory.create)(
+        asset=stock_asset,
+        timestamp=now,
+        last=Decimal("250.55"),
+        volume=100,
+    )
+
+    response = await dmr_async_client.get(f"/api/stocks/{stock_asset.symbol}/intraday")
+
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+    assert len(body["points"]) == 1
+    assert Decimal(body["points"][0]["price"]) == snapshot.last
+
+
+async def test_history_unknown_secid_returns_404(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    response = await dmr_async_client.get("/api/stocks/UNKNOWN/history")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+async def test_history_from_after_to_returns_422(
+    dmr_async_client: DMRAsyncClient,
+    stock_asset: StockAsset,
+) -> None:
+    response = await dmr_async_client.get(
+        f"/api/stocks/{stock_asset.symbol}/history?from=2026-09-18&to=2026-01-01",
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+async def test_history_returns_candles_with_int_volume_within_period(
+    dmr_async_client: DMRAsyncClient,
+    stock_asset: StockAsset,
+) -> None:
+    candle = await sync_to_async(StockDailyCandleFactory.create)(
+        asset=stock_asset,
+        date=datetime(2026, 6, 1, tzinfo=UTC).date(),
+    )
+    await sync_to_async(StockDailyCandleFactory.create)(
+        asset=stock_asset,
+        date=datetime(2020, 1, 1, tzinfo=UTC).date(),
+    )
+
+    response = await dmr_async_client.get(
+        f"/api/stocks/{stock_asset.symbol}/history?from=2026-01-01&to=2026-12-31",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+    assert len(body) == 1
+    assert Decimal(body[0]["close"]) == candle.close
+    assert isinstance(body[0]["volume"], int)

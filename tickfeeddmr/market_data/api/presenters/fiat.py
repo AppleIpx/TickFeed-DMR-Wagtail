@@ -5,9 +5,12 @@ from tickfeeddmr.market_data.api.schemas.fiat import (
     CBR_DATA_DELAY_SECONDS,
     CBR_SOURCE_LABEL,
     FiatRateOut,
+    FiatRatePointOut,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from tickfeeddmr.market_data.models import FiatCurrency, FiatPriceSnapshot
 
 
@@ -23,3 +26,15 @@ def rate_out(asset: FiatCurrency, snapshot: FiatPriceSnapshot) -> FiatRateOut:
             data_delay_seconds=CBR_DATA_DELAY_SECONDS,
         ),
     )
+
+
+def history_point_out(snapshot: FiatPriceSnapshot) -> FiatRatePointOut:
+    return FiatRatePointOut(
+        timestamp=snapshot.timestamp,
+        effective_date=snapshot.effective_date,
+        rate=str(snapshot.price),
+    )
+
+
+def history_out(snapshots: Sequence[FiatPriceSnapshot]) -> list[FiatRatePointOut]:
+    return [history_point_out(snapshot) for snapshot in snapshots]
