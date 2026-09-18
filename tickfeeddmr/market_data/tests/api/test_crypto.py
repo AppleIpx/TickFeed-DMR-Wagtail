@@ -10,6 +10,7 @@ from asgiref.sync import sync_to_async
 
 from tickfeeddmr.market_data.tests.factories import (
     CryptoAssetFactory,
+    CryptoDailyCandleFactory,
     CryptoPriceSnapshotFactory,
 )
 
@@ -169,3 +170,79 @@ async def test_trades_pagination_next_cursor_reaches_remaining_page(
     second_body = second.json()
     assert [item["trade_id"] for item in second_body["items"]] == [older.trade_id]
     assert second_body["next_cursor"] is None
+
+
+async def test_intraday_unknown_symbol_returns_404(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    response = await dmr_async_client.get("/api/crypto/assets/UNKNOWN/intraday")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+async def test_intraday_returns_aggregated_points(
+    dmr_async_client: DMRAsyncClient,
+    crypto_asset: CryptoAsset,
+) -> None:
+    now = datetime.now(UTC)
+    snapshot = await sync_to_async(CryptoPriceSnapshotFactory.create)(
+        asset=crypto_asset,
+        timestamp=now,
+        price=Decimal("100"),
+        volume=Decimal("1"),
+    )
+
+    response = await dmr_async_client.get(
+        f"/api/crypto/assets/{crypto_asset.symbol}/intraday",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+    assert len(body["points"]) == 1
+    assert Decimal(body["points"][0]["price"]) == snapshot.price
+    assert "freshness" in body
+
+
+async def test_history_unknown_symbol_returns_404(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    response = await dmr_async_client.get("/api/crypto/assets/UNKNOWN/history")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+async def test_history_from_after_to_returns_422(
+    dmr_async_client: DMRAsyncClient,
+    crypto_asset: CryptoAsset,
+) -> None:
+    response = await dmr_async_client.get(
+        f"/api/crypto/assets/{crypto_asset.symbol}/history"
+        "?from=2026-09-18&to=2026-01-01",
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+async def test_history_returns_candles_as_strings_within_period(
+    dmr_async_client: DMRAsyncClient,
+    crypto_asset: CryptoAsset,
+) -> None:
+    candle = await sync_to_async(CryptoDailyCandleFactory.create)(
+        asset=crypto_asset,
+        date=datetime(2026, 6, 1, tzinfo=UTC).date(),
+    )
+    await sync_to_async(CryptoDailyCandleFactory.create)(
+        asset=crypto_asset,
+        date=datetime(2020, 1, 1, tzinfo=UTC).date(),
+    )
+
+    response = await dmr_async_client.get(
+        f"/api/crypto/assets/{crypto_asset.symbol}/history"
+        "?from=2026-01-01&to=2026-12-31",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["close"] == str(candle.close)
+    assert isinstance(body[0]["volume"], str)

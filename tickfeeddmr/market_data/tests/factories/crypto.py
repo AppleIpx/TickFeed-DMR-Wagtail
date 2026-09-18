@@ -5,7 +5,11 @@ from decimal import Decimal
 import factory
 from django.utils import timezone
 
-from tickfeeddmr.market_data.models import CryptoAsset, CryptoPriceSnapshot
+from tickfeeddmr.market_data.models import (
+    CryptoAsset,
+    CryptoDailyCandle,
+    CryptoPriceSnapshot,
+)
 
 
 class CryptoAssetFactory(factory.django.DjangoModelFactory):
@@ -27,3 +31,16 @@ class CryptoPriceSnapshotFactory(factory.django.DjangoModelFactory):
     price = Decimal("42000.12345678")
     volume = Decimal("1.5")
     timestamp = factory.LazyFunction(timezone.now)
+
+
+class CryptoDailyCandleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CryptoDailyCandle
+
+    asset = factory.SubFactory(CryptoAssetFactory)
+    date = factory.LazyFunction(lambda: timezone.now().date())
+    open = Decimal("42000.00000000")
+    high = Decimal("42500.00000000")
+    low = Decimal("41500.00000000")
+    close = Decimal("42200.00000000")
+    volume = Decimal("100.00000000")

@@ -9,6 +9,10 @@ from redis.exceptions import ResponseError
 
 from tickfeeddmr.market_data.providers.binance import EXCHANGE
 from tickfeeddmr.market_data.services.ingest import CryptoTradeIngestService
+from tickfeeddmr.market_data.services.redis_retry import (
+    REDIS_TRANSIENT_ERRORS,
+    RedisRetryLoop,
+)
 from tickfeeddmr.market_data.services.trade_stream import (
     MALFORMED_TRADE_EVENT_ERRORS,
     deserialize_trade_event,
@@ -40,31 +44,38 @@ class Command(BaseCommand):
         asyncio.run(self._run())
 
     async def _run(self) -> None:
-        redis_client: Redis = Redis.from_url(
-            settings.REDIS_URL,
-            decode_responses=True,
-            socket_timeout=(
-                settings.MARKET_DATA_TRADE_READ_BLOCK_MS / 1000
-                + REDIS_SOCKET_TIMEOUT_MARGIN_SECONDS
-            ),
-        )
         ingest = CryptoTradeIngestService(exchange=EXCHANGE)
-        try:
-            await self._ensure_group(redis_client)
-            await self._recover_pending(redis_client, ingest)
-            while True:
-                response = await redis_client.xreadgroup(
-                    groupname=settings.MARKET_DATA_TRADE_CONSUMER_GROUP,
-                    consumername=settings.MARKET_DATA_TRADE_CONSUMER_NAME,
-                    streams={settings.MARKET_DATA_TRADE_STREAM_KEY: NEW_ENTRIES_ID},
-                    count=settings.MARKET_DATA_TRADE_READ_COUNT,
-                    block=settings.MARKET_DATA_TRADE_READ_BLOCK_MS,
-                )
-                if not _has_messages(response):
-                    continue
-                await self._process_batch(redis_client, ingest, response)
-        finally:
-            await redis_client.aclose()
+        retry = RedisRetryLoop(logger=logger, label="consume_market_data_stream")
+        while True:
+            redis_client: Redis = Redis.from_url(
+                settings.REDIS_URL,
+                decode_responses=True,
+                socket_timeout=(
+                    settings.MARKET_DATA_TRADE_READ_BLOCK_MS / 1000
+                    + REDIS_SOCKET_TIMEOUT_MARGIN_SECONDS
+                ),
+            )
+            try:
+                await self._ensure_group(redis_client)
+                await self._recover_pending(redis_client, ingest)
+                retry.reset()
+                while True:
+                    response = await redis_client.xreadgroup(
+                        groupname=settings.MARKET_DATA_TRADE_CONSUMER_GROUP,
+                        consumername=settings.MARKET_DATA_TRADE_CONSUMER_NAME,
+                        streams={
+                            settings.MARKET_DATA_TRADE_STREAM_KEY: NEW_ENTRIES_ID,
+                        },
+                        count=settings.MARKET_DATA_TRADE_READ_COUNT,
+                        block=settings.MARKET_DATA_TRADE_READ_BLOCK_MS,
+                    )
+                    if not _has_messages(response):
+                        continue
+                    await self._process_batch(redis_client, ingest, response)
+            except REDIS_TRANSIENT_ERRORS as exc:
+                await retry.sleep_after_failure(exc)
+            finally:
+                await redis_client.aclose()
 
     async def _ensure_group(self, redis_client: Redis) -> None:
         try:

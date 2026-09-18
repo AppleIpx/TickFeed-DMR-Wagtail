@@ -8,6 +8,7 @@ from django.utils import timezone
 from tickfeeddmr.market_data.models import (
     StockAsset,
     StockBoard,
+    StockDailyCandle,
     StockPriceSnapshot,
     StockTrade,
     StockTradeSide,
@@ -53,3 +54,17 @@ class StockTradeFactory(factory.django.DjangoModelFactory):
     side = StockTradeSide.BUY
     period = "N"
     timestamp = factory.LazyFunction(timezone.now)
+
+
+class StockDailyCandleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = StockDailyCandle
+
+    asset = factory.SubFactory(StockAssetFactory)
+    date = factory.LazyFunction(lambda: timezone.now().date())
+    open = Decimal("248.10")
+    high = Decimal("252.30")
+    low = Decimal("247.00")
+    close = Decimal("250.55")
+    volume = 123_456
+    value = Decimal("30000000.00")

@@ -1,14 +1,6 @@
-"""Юнит-тесты `MoexIssClient` на замоканном HTTP-транспорте.
-
-По образцу `binance/test_rest.py` — `httpx.MockTransport`, без
-`respx`. Ответы ISS всегда имеют форму `{"<блок>": {"columns": [...],
-"data": [...]}}`; тесты собирают такие payload'ы вручную, а не грузят
-фикстуры файлов, чтобы состав колонок был виден прямо в тесте.
-"""
-
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -17,7 +9,10 @@ import httpx
 import pytest
 
 from tickfeeddmr.market_data.providers import moex
-from tickfeeddmr.market_data.providers.exceptions import ProviderConnectionError
+from tickfeeddmr.market_data.providers.exceptions import (
+    ProviderConnectionError,
+    ProviderResponseError,
+)
 from tickfeeddmr.market_data.providers.moex.client import MAX_ATTEMPTS, MoexIssClient
 from tickfeeddmr.market_data.providers.moex.types import MoexBoardRow, MoexTradeRow
 
@@ -123,6 +118,39 @@ async def test_get_board_snapshot_parses_full_column_set() -> None:
             trading_status="T",
         ),
     ]
+    assert rows[0].is_trading is True
+
+
+@pytest.mark.parametrize("status", ["T", "L", "E"])
+async def test_get_board_snapshot_active_trading_statuses_are_trading(
+    status: str,
+) -> None:
+    board_row = [
+        "SBER",
+        "250.55",
+        None,
+        None,
+        "248.10",
+        "252.30",
+        "247.00",
+        123_456,
+        "30000000.00",
+        4200,
+        "18:50:00",
+        status,
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"marketdata": {"columns": BOARD_COLUMNS, "data": [board_row]}},
+        )
+
+    client = _client(handler)
+    rows = await client.get_board_snapshot("TQBR")
+    await client.aclose()
+
+    assert rows[0].trading_status == status
     assert rows[0].is_trading is True
 
 
@@ -281,6 +309,71 @@ async def test_get_trades_page_raises_connection_error_retries_exhausted() -> No
     try:
         with pytest.raises(ProviderConnectionError) as exc_info:
             await client.get_trades_page("SBER")
+    finally:
+        await client.aclose()
+
+    assert call_count == MAX_ATTEMPTS
+    assert exc_info.value.attempts == MAX_ATTEMPTS
+
+
+BORDERS_COLUMNS = ["interval", "begin", "end"]
+
+
+async def test_get_candle_borders_returns_first_and_last_date_for_interval() -> None:
+    borders_data = [
+        [1, "2020-01-01 00:00:00", "2026-09-08 23:59:59"],
+        [24, "2007-05-11 00:00:00", "2026-09-08 00:00:00"],
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == (
+            "/iss/engines/stock/markets/shares/securities/SBER/candleborders.json"
+        )
+        return httpx.Response(
+            200,
+            json={"borders": {"columns": BORDERS_COLUMNS, "data": borders_data}},
+        )
+
+    client = _client(handler)
+    first, last = await client.get_candle_borders("SBER", interval="24")
+    await client.aclose()
+
+    assert first == date(2007, 5, 11)
+    assert last == date(2026, 9, 8)
+
+
+async def test_get_candle_borders_raises_response_error_when_interval_missing() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "borders": {
+                    "columns": BORDERS_COLUMNS,
+                    "data": [[1, "2020-01-01 00:00:00", "2026-09-08 23:59:59"]],
+                },
+            },
+        )
+
+    client = _client(handler)
+    try:
+        with pytest.raises(ProviderResponseError):
+            await client.get_candle_borders("SBER", interval="24")
+    finally:
+        await client.aclose()
+
+
+async def test_get_candle_borders_raises_connection_error_retries_exhausted() -> None:
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        return httpx.Response(500, text="boom")
+
+    client = _client(handler)
+    try:
+        with pytest.raises(ProviderConnectionError) as exc_info:
+            await client.get_candle_borders("SBER", interval="24")
     finally:
         await client.aclose()
 

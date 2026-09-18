@@ -1,14 +1,6 @@
-"""Юнит-тесты `BinanceRestClient` на замоканном HTTP-транспорте.
-
-Используется встроенный `httpx.MockTransport` — httpx уже зависимость
-проекта, отдельного `respx` не требуется: нужны только канонические
-JSON-ответы по фиксированным путям/параметрам, без сложной маршрутизации
-запросов, под которую заводился бы `respx`.
-"""
-
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -20,6 +12,7 @@ from tickfeeddmr.market_data.providers.binance.rest import (
     BinanceRestClient,
     next_klines_cursor,
 )
+from tickfeeddmr.market_data.providers.binance.types import BinanceCandleRow
 from tickfeeddmr.market_data.providers.exceptions import ProviderResponseError
 
 if TYPE_CHECKING:
@@ -164,6 +157,59 @@ async def test_get_klines_raises_provider_error_on_bad_status() -> None:
                 "BTCUSDT",
                 interval="1m",
                 start_time=datetime(2023, 11, 14, tzinfo=UTC),
+            )
+    finally:
+        await client.aclose()
+
+
+async def test_get_daily_candles_parses_response_into_candle_rows() -> None:
+    # 2026-09-08 00:00:00+03:00 (МСК) == 2026-09-07 21:00:00 UTC.
+    open_time_ms = int(datetime(2026, 9, 7, 21, 0, tzinfo=UTC).timestamp() * 1000)
+    kline = _kline(
+        close_price="50000.00",
+        volume="12.5",
+        close_time_ms=open_time_ms,
+        open_time_ms=open_time_ms,
+    )
+    kline[1] = "49500.00"
+    kline[2] = "50200.00"
+    kline[3] = "49400.00"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/v3/klines"
+        assert request.url.params["interval"] == "1d"
+        assert request.url.params["timeZone"] == "3"
+        return httpx.Response(200, json=[kline])
+
+    client = _client(handler)
+    rows = await client.get_daily_candles(
+        "BTCUSDT",
+        start_time=datetime(2026, 9, 7, tzinfo=UTC),
+    )
+    await client.aclose()
+
+    assert rows == [
+        BinanceCandleRow(
+            date=date(2026, 9, 8),
+            open=Decimal("49500.00"),
+            high=Decimal("50200.00"),
+            low=Decimal("49400.00"),
+            close=Decimal("50000.00"),
+            volume=Decimal("12.5"),
+        ),
+    ]
+
+
+async def test_get_daily_candles_raises_provider_error_on_bad_status() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(451, text="rate limited")
+
+    client = _client(handler)
+    try:
+        with pytest.raises(ProviderResponseError):
+            await client.get_daily_candles(
+                "BTCUSDT",
+                start_time=datetime(2026, 9, 7, tzinfo=UTC),
             )
     finally:
         await client.aclose()

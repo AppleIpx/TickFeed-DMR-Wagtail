@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from http import HTTPStatus
 from typing import TYPE_CHECKING
@@ -7,7 +8,10 @@ from typing import TYPE_CHECKING
 import pytest
 from asgiref.sync import sync_to_async
 
-from tickfeeddmr.market_data.tests.factories import FiatCurrencyFactory
+from tickfeeddmr.market_data.tests.factories import (
+    FiatCurrencyFactory,
+    FiatPriceSnapshotFactory,
+)
 
 if TYPE_CHECKING:
     from dmr.test import DMRAsyncClient
@@ -56,3 +60,48 @@ async def test_rates_empty_when_no_currencies_have_snapshots(
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == []
+
+
+async def test_history_unknown_iso_code_returns_404(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    response = await dmr_async_client.get("/api/fiat/rates/UNKNOWN/history")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+async def test_history_from_after_to_returns_422(
+    dmr_async_client: DMRAsyncClient,
+    fiat_currency: FiatCurrency,
+) -> None:
+    response = await dmr_async_client.get(
+        f"/api/fiat/rates/{fiat_currency.iso_code}/history"
+        "?from=2026-09-18&to=2026-01-01",
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+async def test_history_returns_rates_within_period(
+    dmr_async_client: DMRAsyncClient,
+    fiat_currency: FiatCurrency,
+) -> None:
+    snapshot = await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=datetime(2026, 6, 1, tzinfo=UTC).date(),
+    )
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=datetime(2020, 1, 1, tzinfo=UTC).date(),
+    )
+
+    response = await dmr_async_client.get(
+        f"/api/fiat/rates/{fiat_currency.iso_code}/history"
+        "?from=2026-01-01&to=2026-12-31",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["rate"] == str(snapshot.price)
+    assert body[0]["effective_date"] == "2026-06-01"

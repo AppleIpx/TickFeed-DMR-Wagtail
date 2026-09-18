@@ -300,6 +300,69 @@ async def test_get_daily_rates_tls_verification_failure_is_not_retried() -> None
     assert call_count == 1
 
 
+DYNAMIC_RATES_XML = _daily_rates_xml(
+    """
+    <ValCurs ID="R01235" DateRange1="01.09.2026" DateRange2="12.09.2026" name="USD">
+        <Record Date="10.09.2026" Id="R01235">
+            <Nominal>1</Nominal>
+            <Value>91,1234</Value>
+            <VunitRate>91,1234</VunitRate>
+        </Record>
+        <Record Date="11.09.2026" Id="R01235">
+            <Nominal>1</Nominal>
+            <Value>91,5678</Value>
+            <VunitRate>91,5678</VunitRate>
+        </Record>
+    </ValCurs>
+    """,
+)
+
+
+async def test_get_dynamic_rates_happy_path() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/scripts/XML_dynamic.asp"
+        assert request.url.params["VAL_NM_RQ"] == "R01235"
+        assert request.url.params["date_req1"] == "01/09/2026"
+        assert request.url.params["date_req2"] == "12/09/2026"
+        return httpx.Response(200, content=DYNAMIC_RATES_XML)
+
+    client = _client(handler)
+    rows = await client.get_dynamic_rates(
+        "R01235",
+        date_from=date(2026, 9, 1),
+        date_to=date(2026, 9, 12),
+    )
+    await client.aclose()
+
+    assert [(row.effective_date, row.rate) for row in rows] == [
+        (date(2026, 9, 10), Decimal("91.1234")),
+        (date(2026, 9, 11), Decimal("91.5678")),
+    ]
+
+
+async def test_get_dynamic_rates_raises_connection_error_retries_exhausted() -> None:
+    call_count = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        return httpx.Response(500, text="boom")
+
+    client = _client(handler)
+    try:
+        with pytest.raises(ProviderConnectionError) as exc_info:
+            await client.get_dynamic_rates(
+                "R01235",
+                date_from=date(2026, 9, 1),
+                date_to=date(2026, 9, 12),
+            )
+    finally:
+        await client.aclose()
+
+    assert call_count == MAX_ATTEMPTS
+    assert exc_info.value.attempts == MAX_ATTEMPTS
+
+
 async def test_get_daily_rates_non_retryable_status_is_not_retried() -> None:
     call_count = 0
 
