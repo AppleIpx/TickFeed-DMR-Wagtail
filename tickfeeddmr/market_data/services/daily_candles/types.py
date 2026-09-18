@@ -1,15 +1,15 @@
 import msgspec
 
 
-class StockCatchUpResult(msgspec.Struct, frozen=True):
+class CatchUpResult(msgspec.Struct, frozen=True):
     """Итог догона одного актива — сырые счётчики для лога вызывающей задачи."""
 
     written: int
     already_up_to_date: bool
 
 
-class StockDailyCandlesRunResult(msgspec.Struct, frozen=True):
-    """Итог ночного прогона по всем активным активам."""
+class DailyCandlesRunResult(msgspec.Struct, frozen=True):
+    """Итог ночного прогона по всем активным активам домена."""
 
     processed: int
     written: int
@@ -17,33 +17,18 @@ class StockDailyCandlesRunResult(msgspec.Struct, frozen=True):
     budget_exhausted: bool
 
 
-class FiatCatchUpResult(msgspec.Struct, frozen=True):
-    """Итог догона одной валюты — сырые счётчики для лога вызывающей задачи."""
+class RunMessages(msgspec.Struct, frozen=True):
+    """Русскоязычные тексты лога прогона — единственное, что у каждого домена своё.
 
-    written: int
-    already_up_to_date: bool
+    `run_started`/`budget_exhausted`/`provider_unavailable`/`unexpected_error`/
+    `run_summary` — шаблоны под `str.format(...)`, `no_active_assets`/
+    `lock_busy` подставлять некуда — это готовые строки.
+    """
 
-
-class FiatDailyCandlesRunResult(msgspec.Struct, frozen=True):
-    """Итог ночного прогона по всем активным валютам."""
-
-    processed: int
-    written: int
-    skipped_errors: int
-    budget_exhausted: bool
-
-
-class CryptoCatchUpResult(msgspec.Struct, frozen=True):
-    """Итог догона одного актива — сырые счётчики для лога вызывающей задачи."""
-
-    written: int
-    already_up_to_date: bool
-
-
-class CryptoDailyCandlesRunResult(msgspec.Struct, frozen=True):
-    """Итог ночного прогона по всем активным активам."""
-
-    processed: int
-    written: int
-    skipped_errors: int
-    budget_exhausted: bool
+    no_active_assets: str
+    lock_busy: str
+    run_started: str
+    budget_exhausted: str
+    provider_unavailable: str
+    unexpected_error: str
+    run_summary: str

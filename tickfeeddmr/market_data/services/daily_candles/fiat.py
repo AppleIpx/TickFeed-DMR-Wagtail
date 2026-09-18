@@ -7,21 +7,24 @@ from django.db.models import F, Max
 
 from tickfeeddmr.market_data.models import FiatCurrency, FiatPriceSnapshot
 from tickfeeddmr.market_data.providers.cbr import CbrDailyRatesClient
-from tickfeeddmr.market_data.providers.exceptions import ProviderConnectionError
 from tickfeeddmr.market_data.services.daily_candles.budget import RunBudget
 from tickfeeddmr.market_data.services.daily_candles.cursor import (
     MOSCOW_TZ,
     is_up_to_date,
     moscow_yesterday,
 )
+from tickfeeddmr.market_data.services.daily_candles.runner import (
+    CatchUpRunnerConfig,
+    run_catch_up_all,
+)
 from tickfeeddmr.market_data.services.daily_candles.settings import (
     validate_poll_budget,
 )
 from tickfeeddmr.market_data.services.daily_candles.types import (
-    FiatCatchUpResult,
-    FiatDailyCandlesRunResult,
+    CatchUpResult,
+    DailyCandlesRunResult,
+    RunMessages,
 )
-from tickfeeddmr.market_data.services.locks import LockBusyError, redis_lock
 
 logger = get_task_logger(__name__)
 
@@ -46,12 +49,43 @@ HISTORY_START_DATE = date(1992, 7, 1)
 DENOMINATION_DATE = date(1998, 1, 1)
 DENOMINATION_DIVISOR = Decimal(1000)
 
+_MESSAGES = RunMessages(
+    no_active_assets=(
+        "Догон истории курсов ЦБ РФ пропущен: нет ни одной активной "
+        "валюты, собирать нечего"
+    ),
+    lock_busy=(
+        "Догон истории курсов ЦБ РФ пропущен: предыдущий прогон ещё идёт (лок занят)"
+    ),
+    run_started=(
+        "Догон истории курсов ЦБ РФ: начат прогон, кандидатов {count} "
+        "(лимит {limit}), до {until}"
+    ),
+    budget_exhausted=(
+        "Догон истории курсов ЦБ РФ: бюджет прогона исчерпан, "
+        "обработано {processed} из {total} — остальные продолжатся "
+        "следующей ночью"
+    ),
+    provider_unavailable=(
+        "ЦБ РФ недоступен при догоне {symbol}: {exc} — валюта пропущена, "
+        "попробуем следующей ночью"
+    ),
+    unexpected_error=(
+        "Не удалось догнать историю курса {symbol} — валюта пропущена, "
+        "попробуем следующей ночью"
+    ),
+    run_summary=(
+        "Догон истории курсов ЦБ РФ: обработано {processed} валют, "
+        "записано {written} точек, ошибок {skipped_errors}"
+    ),
+)
+
 
 async def catch_up_asset(
     asset: FiatCurrency,
     *,
     until: date | None = None,
-) -> FiatCatchUpResult:
+) -> CatchUpResult:
     """Догрузить `FiatPriceSnapshot` по одной валюте — от курсора до `until`."""
     until_date = until or moscow_yesterday(now=datetime.now(UTC))
     last_date = (
@@ -61,7 +95,7 @@ async def catch_up_asset(
         .afirst()
     )
     if is_up_to_date(last_date, until=until_date):
-        return FiatCatchUpResult(written=0, already_up_to_date=True)
+        return CatchUpResult(written=0, already_up_to_date=True)
 
     date_from = (
         last_date + timedelta(days=1) if last_date is not None else HISTORY_START_DATE
@@ -78,7 +112,7 @@ async def catch_up_asset(
         await client.aclose()
 
     if not rows:
-        return FiatCatchUpResult(written=0, already_up_to_date=False)
+        return CatchUpResult(written=0, already_up_to_date=False)
 
     snapshots = [
         FiatPriceSnapshot(
@@ -94,86 +128,29 @@ async def catch_up_asset(
         for row in rows
     ]
     await FiatPriceSnapshot.objects.abulk_create(snapshots, ignore_conflicts=True)
-    return FiatCatchUpResult(written=len(snapshots), already_up_to_date=False)
+    return CatchUpResult(written=len(snapshots), already_up_to_date=False)
 
 
-async def catch_up_all_assets(*, limit: int) -> FiatDailyCandlesRunResult | None:
+async def catch_up_all_assets(*, limit: int) -> DailyCandlesRunResult | None:
     """Ночной догон по активным валютам — до `limit` штук за прогон.
 
     `None` — лок уже занят предыдущим прогоном.
     """
-    total = await FiatCurrency.objects.filter(is_active=True).acount()
-    if total == 0:
-        logger.info(
-            "Догон истории курсов ЦБ РФ пропущен: нет ни одной активной "
-            "валюты, собирать нечего",
-        )
-        return FiatDailyCandlesRunResult(0, 0, 0, budget_exhausted=False)
-
-    try:
-        async with redis_lock(
-            redis_url=settings.REDIS_URL,
-            key=LOCK_KEY,
-            ttl_seconds=settings.FIAT_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS,
-        ):
-            return await _run(limit=limit)
-    except LockBusyError:
-        logger.info(
-            "Догон истории курсов ЦБ РФ пропущен: предыдущий прогон ещё "
-            "идёт (лок занят)",
-        )
-        return None
-
-
-async def _run(*, limit: int) -> FiatDailyCandlesRunResult:
-    until_date = moscow_yesterday(now=datetime.now(UTC))
-    assets = [
-        asset
-        async for asset in FiatCurrency.objects.filter(is_active=True)
-        .annotate(last_snapshot_date=Max("price_snapshots__effective_date"))
-        .order_by(F("last_snapshot_date").asc(nulls_first=True))[:limit]
-    ]
-    logger.info(
-        f"Догон истории курсов ЦБ РФ: начат прогон, кандидатов "
-        f"{len(assets)} (лимит {limit}), до {until_date}",
+    config = CatchUpRunnerConfig(
+        lock_key=LOCK_KEY,
+        lock_ttl_seconds=settings.FIAT_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS,
+        budget_seconds=settings.FIAT_DAILY_CANDLES_POLL_BUDGET_SECONDS,
+        run_budget_cls=RunBudget,
+        count_active=FiatCurrency.objects.filter(is_active=True).acount,
+        fetch_candidates=lambda limit: (
+            FiatCurrency.objects.filter(is_active=True)
+            .annotate(last_snapshot_date=Max("price_snapshots__effective_date"))
+            .order_by(F("last_snapshot_date").asc(nulls_first=True))[:limit]
+        ),
+        catch_up_asset=catch_up_asset,
+        messages=_MESSAGES,
     )
-
-    budget = RunBudget(settings.FIAT_DAILY_CANDLES_POLL_BUDGET_SECONDS)
-    processed = 0
-    written = 0
-    skipped_errors = 0
-    budget_exhausted = False
-    for asset in assets:
-        if budget.expired:
-            budget_exhausted = True
-            logger.info(
-                f"Догон истории курсов ЦБ РФ: бюджет прогона исчерпан, "
-                f"обработано {processed} из {len(assets)} — остальные "
-                f"продолжатся следующей ночью",
-            )
-            break
-        try:
-            result = await catch_up_asset(asset, until=until_date)
-        except ProviderConnectionError as exc:
-            skipped_errors += 1
-            logger.warning(
-                f"ЦБ РФ недоступен при догоне {asset.symbol}: {exc} — "
-                f"валюта пропущена, попробуем следующей ночью",
-            )
-            continue
-        processed += 1
-        written += result.written
-
-    logger.info(
-        f"Догон истории курсов ЦБ РФ: обработано {processed} валют, "
-        f"записано {written} точек, ошибок {skipped_errors}",
-    )
-    return FiatDailyCandlesRunResult(
-        processed=processed,
-        written=written,
-        skipped_errors=skipped_errors,
-        budget_exhausted=budget_exhausted,
-    )
+    return await run_catch_up_all(limit=limit, config=config)
 
 
 def _denominated_rate(rate: Decimal, effective_date: date) -> Decimal:

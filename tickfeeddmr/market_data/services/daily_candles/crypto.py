@@ -10,21 +10,24 @@ from tickfeeddmr.market_data.providers.binance.rest import (
     MAX_KLINES_LIMIT,
     BinanceRestClient,
 )
-from tickfeeddmr.market_data.providers.exceptions import ProviderConnectionError
 from tickfeeddmr.market_data.services.daily_candles.budget import RunBudget
 from tickfeeddmr.market_data.services.daily_candles.cursor import (
     MOSCOW_TZ,
     is_up_to_date,
     moscow_yesterday,
 )
+from tickfeeddmr.market_data.services.daily_candles.runner import (
+    CatchUpRunnerConfig,
+    run_catch_up_all,
+)
 from tickfeeddmr.market_data.services.daily_candles.settings import (
     validate_poll_budget,
 )
 from tickfeeddmr.market_data.services.daily_candles.types import (
-    CryptoCatchUpResult,
-    CryptoDailyCandlesRunResult,
+    CatchUpResult,
+    DailyCandlesRunResult,
+    RunMessages,
 )
-from tickfeeddmr.market_data.services.locks import LockBusyError, redis_lock
 
 if TYPE_CHECKING:
     from tickfeeddmr.market_data.providers.binance.types import BinanceCandleRow
@@ -41,12 +44,43 @@ validate_poll_budget(
 
 EPOCH_START = datetime.fromtimestamp(0, tz=UTC)
 
+_MESSAGES = RunMessages(
+    no_active_assets=(
+        "Догон дневных свечей крипты пропущен: нет ни одного активного "
+        "актива, собирать нечего"
+    ),
+    lock_busy=(
+        "Догон дневных свечей крипты пропущен: предыдущий прогон ещё идёт (лок занят)"
+    ),
+    run_started=(
+        "Догон дневных свечей крипты: начат прогон, кандидатов {count} "
+        "(лимит {limit}), до {until}"
+    ),
+    budget_exhausted=(
+        "Догон дневных свечей крипты: бюджет прогона исчерпан, "
+        "обработано {processed} из {total} — остальные продолжатся "
+        "следующей ночью"
+    ),
+    provider_unavailable=(
+        "Binance недоступен при догоне {symbol}: {exc} — актив пропущен, "
+        "попробуем следующей ночью"
+    ),
+    unexpected_error=(
+        "Не удалось догнать дневные свечи {symbol} — актив пропущен, "
+        "попробуем следующей ночью"
+    ),
+    run_summary=(
+        "Догон дневных свечей крипты: обработано {processed} активов, "
+        "записано {written} свечей, ошибок {skipped_errors}"
+    ),
+)
+
 
 async def catch_up_asset(
     asset: CryptoAsset,
     *,
     until: date | None = None,
-) -> CryptoCatchUpResult:
+) -> CatchUpResult:
     """Догрузить `CryptoDailyCandle` по одному активу — от курсора до `until`.
 
     `until` по умолчанию — вчера по Москве. Диапазон запрашивается целиком
@@ -62,7 +96,7 @@ async def catch_up_asset(
         .afirst()
     )
     if is_up_to_date(last_date, until=until_date):
-        return CryptoCatchUpResult(written=0, already_up_to_date=True)
+        return CatchUpResult(written=0, already_up_to_date=True)
 
     start_time = (
         _moscow_midnight(last_date + timedelta(days=1))
@@ -78,7 +112,7 @@ async def catch_up_asset(
         await client.aclose()
 
     if not rows:
-        return CryptoCatchUpResult(written=0, already_up_to_date=False)
+        return CatchUpResult(written=0, already_up_to_date=False)
 
     candles = [
         CryptoDailyCandle(
@@ -93,87 +127,30 @@ async def catch_up_asset(
         for row in rows
     ]
     await CryptoDailyCandle.objects.abulk_create(candles, ignore_conflicts=True)
-    return CryptoCatchUpResult(written=len(candles), already_up_to_date=False)
+    return CatchUpResult(written=len(candles), already_up_to_date=False)
 
 
-async def catch_up_all_assets(*, limit: int) -> CryptoDailyCandlesRunResult | None:
+async def catch_up_all_assets(*, limit: int) -> DailyCandlesRunResult | None:
     """Ночной догон по активным активам — до `limit` штук за прогон.
 
     `None` — лок уже занят предыдущим прогоном (вызывающая задача просто
     логирует и выходит, ничего не считая ошибкой).
     """
-    total = await CryptoAsset.objects.filter(is_active=True).acount()
-    if total == 0:
-        logger.info(
-            "Догон дневных свечей крипты пропущен: нет ни одного активного "
-            "актива, собирать нечего",
-        )
-        return CryptoDailyCandlesRunResult(0, 0, 0, budget_exhausted=False)
-
-    try:
-        async with redis_lock(
-            redis_url=settings.REDIS_URL,
-            key=LOCK_KEY,
-            ttl_seconds=settings.CRYPTO_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS,
-        ):
-            return await _run(limit=limit)
-    except LockBusyError:
-        logger.info(
-            "Догон дневных свечей крипты пропущен: предыдущий прогон ещё "
-            "идёт (лок занят)",
-        )
-        return None
-
-
-async def _run(*, limit: int) -> CryptoDailyCandlesRunResult:
-    until_date = moscow_yesterday(now=datetime.now(UTC))
-    assets = [
-        asset
-        async for asset in CryptoAsset.objects.filter(is_active=True)
-        .annotate(last_candle_date=Max("daily_candles__date"))
-        .order_by(F("last_candle_date").asc(nulls_first=True))[:limit]
-    ]
-    logger.info(
-        f"Догон дневных свечей крипты: начат прогон, кандидатов "
-        f"{len(assets)} (лимит {limit}), до {until_date}",
+    config = CatchUpRunnerConfig(
+        lock_key=LOCK_KEY,
+        lock_ttl_seconds=settings.CRYPTO_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS,
+        budget_seconds=settings.CRYPTO_DAILY_CANDLES_POLL_BUDGET_SECONDS,
+        run_budget_cls=RunBudget,
+        count_active=CryptoAsset.objects.filter(is_active=True).acount,
+        fetch_candidates=lambda limit: (
+            CryptoAsset.objects.filter(is_active=True)
+            .annotate(last_candle_date=Max("daily_candles__date"))
+            .order_by(F("last_candle_date").asc(nulls_first=True))[:limit]
+        ),
+        catch_up_asset=catch_up_asset,
+        messages=_MESSAGES,
     )
-
-    budget = RunBudget(settings.CRYPTO_DAILY_CANDLES_POLL_BUDGET_SECONDS)
-    processed = 0
-    written = 0
-    skipped_errors = 0
-    budget_exhausted = False
-    for asset in assets:
-        if budget.expired:
-            budget_exhausted = True
-            logger.info(
-                f"Догон дневных свечей крипты: бюджет прогона исчерпан, "
-                f"обработано {processed} из {len(assets)} — остальные "
-                f"продолжатся следующей ночью",
-            )
-            break
-        try:
-            result = await catch_up_asset(asset, until=until_date)
-        except ProviderConnectionError as exc:
-            skipped_errors += 1
-            logger.warning(
-                f"Binance недоступен при догоне {asset.symbol}: {exc} — "
-                f"актив пропущен, попробуем следующей ночью",
-            )
-            continue
-        processed += 1
-        written += result.written
-
-    logger.info(
-        f"Догон дневных свечей крипты: обработано {processed} активов, "
-        f"записано {written} свечей, ошибок {skipped_errors}",
-    )
-    return CryptoDailyCandlesRunResult(
-        processed=processed,
-        written=written,
-        skipped_errors=skipped_errors,
-        budget_exhausted=budget_exhausted,
-    )
+    return await run_catch_up_all(limit=limit, config=config)
 
 
 async def _fetch_all_pages(
