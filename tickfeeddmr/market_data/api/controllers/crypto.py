@@ -1,10 +1,16 @@
+from collections.abc import AsyncIterator  # noqa: TC003
+from http import HTTPStatus
+
 from dmr import (
     Path,
     Query,
+    ResponseSpec,
     modify,
 )
+from dmr.errors import ErrorModel
+from dmr.streaming.sse import SSEvent  # noqa: TC002
 
-from config.api_base import BaseController
+from config.api_base import BaseController, BaseSSEController
 from tickfeeddmr.market_data.api.presenters import crypto as crypto_presenters
 from tickfeeddmr.market_data.api.presenters.common import asset_list_out
 from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
@@ -17,11 +23,15 @@ from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
 )
 from tickfeeddmr.market_data.api.schemas.crypto import (  # noqa: TC001
     CryptoCurrentOut,
+    CryptoStreamEventOut,
     CryptoTradeOut,
     SymbolPath,
+    SymbolsQuery,
 )
+from tickfeeddmr.market_data.services.live_trades import crypto_trade_stream
 from tickfeeddmr.market_data.services.queries import crypto as crypto_queries
 from tickfeeddmr.market_data.services.queries.cursor import decode_cursor
+from tickfeeddmr.market_data.services.queries.tickers import parse_tickers
 
 _TAGS = ["Крипта"]
 
@@ -87,3 +97,31 @@ class CryptoHistoryController(BaseController):
             date_to=parsed_query.date_to,
         )
         return crypto_presenters.history_out(candles)
+
+
+class CryptoStreamController(BaseSSEController):
+    """`GET /api/crypto/stream` — SSE-поток сделок крипты.
+
+    Без параметров — все активные пары, `?symbols=BTC,ETH` — только
+    указанные. Ни один тикер не найден — 404 (а не 200 + закрытый поток:
+    `EventSource` на 404 перестаёт переподключаться).
+    """
+
+    @modify(
+        tags=_TAGS,
+        extra_responses=[
+            ResponseSpec(ErrorModel, status_code=HTTPStatus.NOT_FOUND),
+        ],
+    )
+    async def get(
+        self,
+        parsed_query: Query[SymbolsQuery],
+    ) -> AsyncIterator[SSEvent[CryptoStreamEventOut]]:
+        targets = await crypto_queries.resolve_stream_targets(
+            parse_tickers(parsed_query.symbols),
+        )
+        await self.release_db_connections()
+        return crypto_presenters.stream_events(
+            targets,
+            crypto_trade_stream(targets.symbols_by_stream_key),
+        )

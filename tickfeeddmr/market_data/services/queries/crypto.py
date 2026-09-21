@@ -10,13 +10,18 @@ from tickfeeddmr.market_data.models import (
     CryptoDailyCandle,
     CryptoPriceSnapshot,
 )
+from tickfeeddmr.market_data.providers.binance import EXCHANGE
 from tickfeeddmr.market_data.services.queries.cursor import fetch_cursor_page
 from tickfeeddmr.market_data.services.queries.errors import (
     AssetNotFoundError,
     NoDataYetError,
+    StreamAssetsNotFoundError,
 )
 from tickfeeddmr.market_data.services.queries.period import resolve_period
-from tickfeeddmr.market_data.services.queries.types import IntradayPoint
+from tickfeeddmr.market_data.services.queries.types import (
+    IntradayPoint,
+    StreamTargets,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -30,6 +35,37 @@ INTRADAY_WINDOW = timedelta(hours=24)
 async def list_assets() -> Sequence[CryptoAsset]:
     """Активные крипто-пары."""
     return [asset async for asset in CryptoAsset.objects.filter(is_active=True)]
+
+
+async def resolve_stream_targets(symbols: Sequence[str] | None) -> StreamTargets:
+    """Какие крипто-пары стримить по SSE.
+
+    `symbols=None` — все активные пары Binance (именно Binance: в стриме
+    лежат только его сделки). Иначе только перечисленные; ненайденные и
+    неактивные попадают в `unknown` (отвечаем им намеренно одинаково, см.
+    `AssetNotFoundError`). `StreamAssetsNotFoundError` — стримить нечего.
+    """
+    queryset = CryptoAsset.objects.filter(exchange=EXCHANGE, is_active=True)
+    if symbols is not None:
+        queryset = queryset.filter(symbol__in=symbols)
+    by_pair = {asset.trading_pair: asset.symbol async for asset in queryset}
+
+    if not by_pair:
+        if symbols is None:
+            msg = (
+                "Нет активных крипто-активов для стрима. "
+                "Актуальный список — GET /api/crypto/assets/"
+            )
+        else:
+            msg = (
+                "Ни один из запрошенных тикеров не найден или не активен: "
+                f"{', '.join(symbols)}. Актуальный список — GET /api/crypto/assets/"
+            )
+        raise StreamAssetsNotFoundError(msg)
+
+    found = set(by_pair.values())
+    unknown = [] if symbols is None else [s for s in symbols if s not in found]
+    return StreamTargets(symbols_by_stream_key=by_pair, unknown=unknown)
 
 
 async def get_current(symbol: str) -> tuple[CryptoAsset, CryptoPriceSnapshot]:

@@ -10,6 +10,7 @@ from redis.exceptions import ResponseError
 from tickfeeddmr.market_data.providers.binance import EXCHANGE
 from tickfeeddmr.market_data.services.ingest import CryptoTradeIngestService
 from tickfeeddmr.market_data.services.redis_retry import (
+    REDIS_SOCKET_TIMEOUT_MARGIN_SECONDS,
     REDIS_TRANSIENT_ERRORS,
     RedisRetryLoop,
 )
@@ -17,6 +18,7 @@ from tickfeeddmr.market_data.services.trade_stream import (
     MALFORMED_TRADE_EVENT_ERRORS,
     deserialize_trade_event,
 )
+from tickfeeddmr.market_data.services.trade_stream_retention import TradeStreamTrimmer
 
 if TYPE_CHECKING:
     from tickfeeddmr.market_data.providers.base import TradeEvent
@@ -26,19 +28,20 @@ logger = logging.getLogger(__name__)
 GROUP_ALREADY_EXISTS = "BUSYGROUP"
 PENDING_ENTRIES_START_ID = "0"
 NEW_ENTRIES_ID = ">"
-# redis-py по умолчанию ставит клиентский socket_timeout=5с (DEFAULT_SOCKET_TIMEOUT
-# в redis/_defaults.py) — ровно столько же, сколько MARKET_DATA_TRADE_READ_BLOCK_MS
-# по умолчанию просит подержать XREADGROUP открытым на сервере. Это гонка двух
-# одинаковых таймеров: если клиентский сокет-таймаут срабатывает хоть на миллисекунду
-# раньше серверного BLOCK, redis-py кидает жёсткий TimeoutError вместо тихого пустого
-# ответа (graceful-путь есть только когда timeout передан на конкретный вызов, а не
-# через socket_timeout соединения). Держим клиентский таймаут с большим запасом над
-# BLOCK, чтобы сервер всегда успевал ответить первым.
-REDIS_SOCKET_TIMEOUT_MARGIN_SECONDS = 10
 
 
 class Command(BaseCommand):
     help = "Читает Redis Stream сделок (consumer group) и пишет CryptoPriceSnapshot."
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Состояние обрезки живёт весь процесс и переживает переподключения к
+        # Redis: id записей сквозные по стриму, а не по соединению.
+        self._trimmer = TradeStreamTrimmer(
+            stream_key=settings.MARKET_DATA_TRADE_STREAM_KEY,
+            gap_seconds=settings.MARKET_DATA_TRADE_TRIM_GAP_SECONDS,
+            interval_seconds=settings.MARKET_DATA_TRADE_TRIM_INTERVAL_SECONDS,
+        )
 
     def handle(self, *args: Any, **options: Any) -> None:
         asyncio.run(self._run())
@@ -71,7 +74,13 @@ class Command(BaseCommand):
                     )
                     if not _has_messages(response):
                         continue
-                    await self._process_batch(redis_client, ingest, response)
+                    written_id = await self._process_batch(
+                        redis_client,
+                        ingest,
+                        response,
+                    )
+                    self._trimmer.note_written(written_id)
+                    await self._trimmer.maybe_trim(redis_client)
             except REDIS_TRANSIENT_ERRORS as exc:
                 await retry.sleep_after_failure(exc)
             finally:
@@ -121,25 +130,26 @@ class Command(BaseCommand):
                 f"Восстанавливаем {_count_messages(response)} необработанных "
                 f"сделок с прошлого запуска",
             )
-            await self._process_batch(redis_client, ingest, response)
+            written_id = await self._process_batch(redis_client, ingest, response)
+            self._trimmer.note_written(written_id)
 
     async def _process_batch(
         self,
         redis_client: Redis,
         ingest: CryptoTradeIngestService,
         response: list[tuple[str, list[tuple[str, dict[str, str]]]]],
-    ) -> None:
-        for _stream_key, messages in response:
-            events: list[TradeEvent] = []
-            message_ids = [message_id for message_id, _fields in messages]
+    ) -> str | None:
+        """Записать пачку в БД и подтвердить её (`XACK`).
 
-            for message_id, fields in messages:
-                try:
-                    events.append(deserialize_trade_event(fields))
-                except MALFORMED_TRADE_EVENT_ERRORS:
-                    logger.exception(
-                        f"Битая запись сделки в стриме, пропускаем id={message_id}",
-                    )
+        Возвращает id последней записи пачки, если пачка записана без
+        исключения, иначе `None` — граница обрезки стрима
+        (`TradeStreamTrimmer`) тогда не двигается. Данные неудавшейся пачки
+        всё равно уже подтверждены и потеряны, но лишнего мы не подрезаем.
+        """
+        last_written_id: str | None = None
+        for _stream_key, messages in response:
+            message_ids = [message_id for message_id, _fields in messages]
+            events = _decode_messages(messages)
 
             try:
                 # Сознательно широкий catch — см. докстринг модуля: ack всё равно
@@ -148,6 +158,8 @@ class Command(BaseCommand):
             except Exception:
                 logger.exception("Не удалось записать пачку CryptoPriceSnapshot")
             else:
+                if message_ids:
+                    last_written_id = message_ids[-1]
                 # Хот-путь: вызывается на каждую обработанную пачку. f-строка
                 # собирается всегда, даже когда DEBUG не пишется (root на INFO) —
                 # явная проверка нужна, см. конвенцию логирования в CLAUDE.md.
@@ -163,6 +175,35 @@ class Command(BaseCommand):
                     settings.MARKET_DATA_TRADE_CONSUMER_GROUP,
                     *message_ids,
                 )
+        return last_written_id
+
+
+def _decode_messages(messages: list[tuple[str, dict[str, str]]]) -> list[TradeEvent]:
+    """Разобрать записи пачки в `TradeEvent`, пропуская обрезанные и битые.
+
+    Запись из PEL, которую уже удалила обрезка стрима, redis-py отдаёт как
+    `(id, {})`. Это не «битая» запись, а потеря данных ретеншном — логируем
+    отдельно, одним WARNING на пачку, чтобы причина не терялась в
+    «Битая запись».
+    """
+    events: list[TradeEvent] = []
+    truncated = 0
+    for message_id, fields in messages:
+        if not fields:
+            truncated += 1
+            continue
+        try:
+            events.append(deserialize_trade_event(fields))
+        except MALFORMED_TRADE_EVENT_ERRORS:
+            logger.exception(
+                f"Битая запись сделки в стриме, пропускаем id={message_id}",
+            )
+    if truncated:
+        logger.warning(
+            f"{truncated} записей стрима обрезаны ретеншном до обработки "
+            f"(PEL указывает на удалённые записи), сделки потеряны",
+        )
+    return events
 
 
 def _has_messages(response: list[tuple[str, list[tuple[str, dict[str, str]]]]]) -> bool:

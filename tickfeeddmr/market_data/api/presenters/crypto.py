@@ -9,24 +9,34 @@ from tickfeeddmr.market_data.api.presenters.common import (
     intraday_out,
     trades_page_out,
 )
+from tickfeeddmr.market_data.api.presenters.stream import sse_events, stream_warning
 from tickfeeddmr.market_data.api.schemas.common import PricePointOut
 from tickfeeddmr.market_data.api.schemas.crypto import (
     BINANCE_DATA_DELAY_SECONDS,
     CryptoCurrentOut,
+    CryptoTradeEventOut,
     CryptoTradeOut,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import AsyncGenerator, AsyncIterator, Sequence
     from datetime import date
 
+    from dmr.streaming.sse import SSEvent
+
     from tickfeeddmr.market_data.api.schemas.common import CursorPage, IntradayOut
+    from tickfeeddmr.market_data.api.schemas.crypto import CryptoStreamEventOut
     from tickfeeddmr.market_data.models import (
         CryptoAsset,
         CryptoDailyCandle,
         CryptoPriceSnapshot,
     )
-    from tickfeeddmr.market_data.services.queries.types import IntradayPoint
+    from tickfeeddmr.market_data.providers.base import TradeEvent
+    from tickfeeddmr.market_data.services.queries.types import (
+        IntradayPoint,
+        StreamTargets,
+    )
+    from tickfeeddmr.market_data.services.stream_reader import Heartbeat
 
 MOSCOW_TZ = settings.MOSCOW_TZ
 
@@ -92,3 +102,32 @@ def history_point_out(candle: CryptoDailyCandle) -> PricePointOut:
 
 def history_out(candles: Sequence[CryptoDailyCandle]) -> list[PricePointOut]:
     return [history_point_out(candle) for candle in candles]
+
+
+def stream_events(
+    targets: StreamTargets,
+    batches: AsyncGenerator[list[TradeEvent] | Heartbeat],
+) -> AsyncIterator[SSEvent[CryptoStreamEventOut]]:
+    """SSE-события потока крипты: `warning` -> `trade` -> `heartbeat`."""
+    symbols = targets.symbols_by_stream_key
+
+    def to_trade_event(event: TradeEvent) -> CryptoTradeEventOut:
+        return CryptoTradeEventOut(
+            symbol=symbols[event.trading_pair],
+            timestamp=event.timestamp,
+            price=str(event.price),
+            volume=str(event.volume),
+            side=event.side,
+            trade_id=event.trade_id,
+            data_delay_seconds=BINANCE_DATA_DELAY_SECONDS,
+        )
+
+    return sse_events(
+        batches,
+        to_trade_event=to_trade_event,
+        warning=stream_warning(
+            targets,
+            list_url="/api/crypto/assets/",
+            reason="Тикеры не найдены или отключены",
+        ),
+    )

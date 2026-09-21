@@ -3,7 +3,12 @@ from typing import Literal
 
 import msgspec
 
-from tickfeeddmr.market_data.api.schemas.common import AssetOut, DataFreshness
+from tickfeeddmr.market_data.api.schemas.common import (
+    AssetOut,
+    DataFreshness,
+    HeartbeatOut,
+    StreamWarningOut,
+)
 
 BINANCE_DATA_DELAY_SECONDS = 0
 
@@ -31,3 +36,32 @@ class CryptoTradeOut(msgspec.Struct, frozen=True):
     volume: str
     side: Literal["buy", "sell"]
     trade_id: str
+
+
+class SymbolsQuery(msgspec.Struct, frozen=True):
+    """Query SSE-стрима крипты: `symbols=BTC,ETH` — тикеры через запятую.
+
+    Без параметра поток отдаёт все активные пары.
+    """
+
+    symbols: str | None = None
+
+
+class CryptoTradeEventOut(
+    msgspec.Struct,
+    frozen=True,
+    tag_field="kind",
+    tag="trade",
+):
+    """Событие `trade` SSE-потока крипты: одна сделка, время — с биржи."""
+
+    symbol: str
+    timestamp: datetime
+    price: str
+    volume: str
+    side: Literal["buy", "sell"]
+    trade_id: str
+    data_delay_seconds: int
+
+
+CryptoStreamEventOut = CryptoTradeEventOut | StreamWarningOut | HeartbeatOut

@@ -22,6 +22,8 @@ import msgspec
 # (N/O/C/F/B/D/I/S и фазы аукционов) трактуются как "торги не идут".
 TRADING_ACTIVE_STATUSES = frozenset({"T", "L", "E"})
 
+MOEX_DATA_DELAY_SECONDS = 900
+
 
 class MoexBoardRow(msgspec.Struct, frozen=True):
     """Одна строка снимка борда ISS (`iss.only=marketdata`)."""

@@ -1,10 +1,16 @@
+from collections.abc import AsyncIterator  # noqa: TC003
+from http import HTTPStatus
+
 from dmr import (
     Path,
     Query,
+    ResponseSpec,
     modify,
 )
+from dmr.errors import ErrorModel
+from dmr.streaming.sse import SSEvent  # noqa: TC002
 
-from config.api_base import BaseController
+from config.api_base import BaseController, BaseSSEController
 from tickfeeddmr.market_data.api.presenters import stock as stock_presenters
 from tickfeeddmr.market_data.api.presenters.common import asset_list_out
 from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
@@ -16,12 +22,16 @@ from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
 )
 from tickfeeddmr.market_data.api.schemas.stock import (  # noqa: TC001
     SecidPath,
+    SecidsQuery,
     StockCurrentOut,
     StockPricePointOut,
+    StockStreamEventOut,
     StockTradeOut,
 )
+from tickfeeddmr.market_data.services.live_trades import stock_trade_stream
 from tickfeeddmr.market_data.services.queries import stock as stock_queries
 from tickfeeddmr.market_data.services.queries.cursor import decode_cursor
+from tickfeeddmr.market_data.services.queries.tickers import parse_tickers
 
 _TAGS = ["Акции"]
 
@@ -87,3 +97,31 @@ class StockHistoryController(BaseController):
             date_to=parsed_query.date_to,
         )
         return stock_presenters.history_out(candles)
+
+
+class StockStreamController(BaseSSEController):
+    """`GET /api/stocks/stream` — SSE-поток сделок акций.
+
+    Без параметров — все активные бумаги с включённой лентой сделок,
+    `?secids=SBER,GAZP` — только указанные. Время события — время сделки от
+    ISS; лаг бесплатной выдачи (~15 минут) помечен в `data_delay_seconds`.
+    """
+
+    @modify(
+        tags=_TAGS,
+        extra_responses=[
+            ResponseSpec(ErrorModel, status_code=HTTPStatus.NOT_FOUND),
+        ],
+    )
+    async def get(
+        self,
+        parsed_query: Query[SecidsQuery],
+    ) -> AsyncIterator[SSEvent[StockStreamEventOut]]:
+        targets = await stock_queries.resolve_stream_targets(
+            parse_tickers(parsed_query.secids),
+        )
+        await self.release_db_connections()
+        return stock_presenters.stream_events(
+            targets,
+            stock_trade_stream(targets.symbols_by_stream_key),
+        )

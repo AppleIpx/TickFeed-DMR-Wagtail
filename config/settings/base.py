@@ -6,7 +6,6 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import environ
-from django.core.exceptions import ImproperlyConfigured
 from dmr.openapi import OpenAPIConfig
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
@@ -346,6 +345,36 @@ MARKET_DATA_TRADE_READ_BLOCK_MS = env.int(
     "MARKET_DATA_TRADE_READ_BLOCK_MS",
     default=5000,
 )
+# Ретеншн стрима крипты (см. `services/trade_stream_retention.py`). `XACK`
+# запись не удаляет, поэтому без обрезки стрим растёт при здоровой системе.
+# Потолок — предохранитель у продюсера на случай, когда консьюмер лежит;
+# зазор — сколько времени консьюмер оставляет позади границы «записано в БД»
+# (защита от гонки с SSE-читателем); интервал — как часто консьюмер обрезает.
+# Проверки значений — `services/stream_settings.py`.
+MARKET_DATA_TRADE_STREAM_CEILING_SECONDS = env.int(
+    "MARKET_DATA_TRADE_STREAM_CEILING_SECONDS",
+    default=6 * 60 * 60,
+)
+MARKET_DATA_TRADE_TRIM_GAP_SECONDS = env.int(
+    "MARKET_DATA_TRADE_TRIM_GAP_SECONDS",
+    default=300,
+)
+MARKET_DATA_TRADE_TRIM_INTERVAL_SECONDS = env.int(
+    "MARKET_DATA_TRADE_TRIM_INTERVAL_SECONDS",
+    default=10,
+)
+
+MARKET_DATA_SSE_TOP_N = env.int("MARKET_DATA_SSE_TOP_N", default=3)
+MARKET_DATA_SSE_WINDOW_SECONDS = env.float(
+    "MARKET_DATA_SSE_WINDOW_SECONDS",
+    default=1.0,
+)
+MARKET_DATA_SSE_READ_COUNT = env.int("MARKET_DATA_SSE_READ_COUNT", default=500)
+MARKET_DATA_SSE_HEARTBEAT_SECONDS = env.float(
+    "MARKET_DATA_SSE_HEARTBEAT_SECONDS",
+    default=15.0,
+)
+MARKET_DATA_SSE_MAX_TICKERS = env.int("MARKET_DATA_SSE_MAX_TICKERS", default=50)
 
 # MOEX
 # ------------------------------------------------------------------------------
@@ -357,7 +386,8 @@ MOEX_TRADES_PAGE_LIMIT = env.int("MOEX_TRADES_PAGE_LIMIT", default=5)
 # запроса — константы `providers/moex/client.py`. Инвариант: бюджет < TTL
 # лока с запасом не меньше `_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS`, иначе лок
 # истечёт под живым прогоном и следующий тик наложится на него; бюджет > 0,
-# иначе каждый тик падал бы по бюджету (проверки ниже). Запас TTL над
+# иначе каждый тик падал бы по бюджету (проверки —
+# `services/moex_polling/settings.py`). Запас TTL над
 # бюджетом покрывает то, что внутри лока, но вне бюджета: запись в БД,
 # `aclose()`, снятие лока.
 # Борд (тик 60 с): бюджет 45 < TTL 55 < тик — лок, осиротевший после
@@ -381,35 +411,27 @@ MOEX_TRADES_POLL_LOCK_TTL_SECONDS = env.int(
     "MOEX_TRADES_POLL_LOCK_TTL_SECONDS",
     default=120,
 )
-_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS = 5
 
-
-def _validate_moex_poll_budget(kind: str, budget: int, ttl: int) -> None:
-    budget_name = f"MOEX_{kind}_POLL_BUDGET_SECONDS"
-    ttl_name = f"MOEX_{kind}_POLL_LOCK_TTL_SECONDS"
-    if budget <= 0:
-        msg = f"{budget_name} must be a positive number of seconds, got {budget}"
-        raise ImproperlyConfigured(msg)
-    if ttl - budget < _MOEX_POLL_MIN_LOCK_MARGIN_SECONDS:
-        msg = (
-            f"{ttl_name} ({ttl}) must exceed {budget_name} ({budget}) by at least "
-            f"{_MOEX_POLL_MIN_LOCK_MARGIN_SECONDS}s: the margin covers DB writes, "
-            f"client close and lock release that run inside the lock but outside "
-            f"the run budget"
-        )
-        raise ImproperlyConfigured(msg)
-
-
-_validate_moex_poll_budget(
-    "BOARD",
-    MOEX_BOARD_POLL_BUDGET_SECONDS,
-    MOEX_BOARD_POLL_LOCK_TTL_SECONDS,
+# Redis Stream сделок акций для SSE (`services/moex_trade_stream/`). Поллер
+# пишет в БД всё, а в стрим — только отобранное: последние TOP_N сделок бумаги
+# за прогон среди «свежих». Свежесть считается с поправкой на лаг ISS (~15 мин,
+# `MOEX_DATA_DELAY_SECONDS`): сделки моложе `now − лаг − FRESHNESS`. Ретеншн
+# — окно, которое стрим держит при каждом `XADD` (у стрима нет консьюмера,
+# докачки нет, дольше держать нечего). Проверки значений —
+# `services/moex_polling/settings.py`.
+MOEX_TRADE_STREAM_KEY = env(
+    "MOEX_TRADE_STREAM_KEY",
+    default="market_data:trades:moex",
 )
-_validate_moex_poll_budget(
-    "TRADES",
-    MOEX_TRADES_POLL_BUDGET_SECONDS,
-    MOEX_TRADES_POLL_LOCK_TTL_SECONDS,
+MOEX_TRADE_STREAM_RETENTION_SECONDS = env.int(
+    "MOEX_TRADE_STREAM_RETENTION_SECONDS",
+    default=300,
 )
+MOEX_TRADE_STREAM_FRESHNESS_SECONDS = env.int(
+    "MOEX_TRADE_STREAM_FRESHNESS_SECONDS",
+    default=300,
+)
+MOEX_TRADE_STREAM_TOP_N = env.int("MOEX_TRADE_STREAM_TOP_N", default=10)
 
 # ЦБ РФ
 # ------------------------------------------------------------------------------

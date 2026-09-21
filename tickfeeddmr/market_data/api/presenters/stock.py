@@ -9,26 +9,36 @@ from tickfeeddmr.market_data.api.presenters.common import (
     intraday_out,
     trades_page_out,
 )
+from tickfeeddmr.market_data.api.presenters.stream import sse_events, stream_warning
 from tickfeeddmr.market_data.api.schemas.stock import (
-    MOEX_DATA_DELAY_SECONDS,
     StockCurrentOut,
     StockPricePointOut,
+    StockTradeEventOut,
     StockTradeOut,
 )
+from tickfeeddmr.market_data.providers.moex.types import MOEX_DATA_DELAY_SECONDS
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import AsyncGenerator, AsyncIterator, Sequence
     from datetime import date
     from decimal import Decimal
 
+    from dmr.streaming.sse import SSEvent
+
     from tickfeeddmr.market_data.api.schemas.common import CursorPage, IntradayOut
+    from tickfeeddmr.market_data.api.schemas.stock import StockStreamEventOut
     from tickfeeddmr.market_data.models import (
         StockAsset,
         StockDailyCandle,
         StockPriceSnapshot,
         StockTrade,
     )
-    from tickfeeddmr.market_data.services.queries.types import IntradayPoint
+    from tickfeeddmr.market_data.services.moex_trade_stream import MoexStreamTrade
+    from tickfeeddmr.market_data.services.queries.types import (
+        IntradayPoint,
+        StreamTargets,
+    )
+    from tickfeeddmr.market_data.services.stream_reader import Heartbeat
 
 MOSCOW_TZ = settings.MOSCOW_TZ
 
@@ -99,3 +109,33 @@ def history_point_out(candle: StockDailyCandle) -> StockPricePointOut:
 
 def history_out(candles: Sequence[StockDailyCandle]) -> list[StockPricePointOut]:
     return [history_point_out(candle) for candle in candles]
+
+
+def stream_events(
+    targets: StreamTargets,
+    batches: AsyncGenerator[list[MoexStreamTrade] | Heartbeat],
+) -> AsyncIterator[SSEvent[StockStreamEventOut]]:
+    """SSE-события потока акций: `warning` -> `trade` -> `heartbeat`."""
+
+    def to_trade_event(item: MoexStreamTrade) -> StockTradeEventOut:
+        trade = item.trade
+        return StockTradeEventOut(
+            secid=item.secid,
+            timestamp=trade.timestamp,
+            price=str(trade.price),
+            quantity=trade.quantity,
+            side=trade.side,
+            trade_id=trade.trade_id,
+            period=trade.period,
+            data_delay_seconds=MOEX_DATA_DELAY_SECONDS,
+        )
+
+    return sse_events(
+        batches,
+        to_trade_event=to_trade_event,
+        warning=stream_warning(
+            targets,
+            list_url="/api/stocks/",
+            reason="Тикеры не найдены, отключены или без ленты сделок",
+        ),
+    )

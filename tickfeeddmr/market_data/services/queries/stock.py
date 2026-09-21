@@ -12,10 +12,14 @@ from tickfeeddmr.market_data.services.queries.cursor import fetch_cursor_page
 from tickfeeddmr.market_data.services.queries.errors import (
     AssetNotFoundError,
     NoDataYetError,
+    StreamAssetsNotFoundError,
     TradesNotTrackedError,
 )
 from tickfeeddmr.market_data.services.queries.period import resolve_period
-from tickfeeddmr.market_data.services.queries.types import IntradayPoint
+from tickfeeddmr.market_data.services.queries.types import (
+    IntradayPoint,
+    StreamTargets,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -29,6 +33,37 @@ INTRADAY_WINDOW = timedelta(hours=24)
 async def list_assets() -> Sequence[StockAsset]:
     """Активные акции."""
     return [asset async for asset in StockAsset.objects.filter(is_active=True)]
+
+
+async def resolve_stream_targets(secids: Sequence[str] | None) -> StreamTargets:
+    """Какие бумаги стримить по SSE.
+
+    В стриме акций лежат только сделки бумаг с `track_trades=True` (поллер
+    не собирает ленту остальных), поэтому `secids=None` — все активные бумаги
+    с включённой лентой. Ненайденные, неактивные и без ленты сделок попадают
+    в `unknown` одной формулировкой. `StreamAssetsNotFoundError` — стримить
+    нечего.
+    """
+    queryset = StockAsset.objects.filter(is_active=True, track_trades=True)
+    if secids is not None:
+        queryset = queryset.filter(symbol__in=secids)
+    found = {asset.symbol: asset.symbol async for asset in queryset}
+
+    if not found:
+        if secids is None:
+            msg = (
+                "Нет бумаг с включённой лентой сделок для стрима. "
+                "Актуальный список — GET /api/stocks/"
+            )
+        else:
+            msg = (
+                "Ни одна из запрошенных бумаг не найдена, не активна или без ленты "
+                f"сделок: {', '.join(secids)}. Актуальный список — GET /api/stocks/"
+            )
+        raise StreamAssetsNotFoundError(msg)
+
+    unknown = [] if secids is None else [s for s in secids if s not in found]
+    return StreamTargets(symbols_by_stream_key=found, unknown=unknown)
 
 
 async def get_current(secid: str) -> tuple[StockAsset, StockPriceSnapshot]:

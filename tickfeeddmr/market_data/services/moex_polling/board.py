@@ -41,10 +41,17 @@ from tickfeeddmr.market_data.services.moex_polling.errors import (
     last_failure_note,
     poll_budget_scope,
 )
+from tickfeeddmr.market_data.services.moex_polling.settings import validate_poll_budget
 
 logger = get_task_logger(__name__)
 
 BOARD_LOCK_KEY = "market_data:moex:lock:poll_board"
+
+validate_poll_budget(
+    "BOARD",
+    settings.MOEX_BOARD_POLL_BUDGET_SECONDS,
+    settings.MOEX_BOARD_POLL_LOCK_TTL_SECONDS,
+)
 
 
 class MoexBoardPoller:

@@ -1,40 +1,17 @@
-"""Дочитывание ленты сделок MOEX по бумагам с `track_trades=True`.
-
-Отдельная ответственность от `services/moex_ingest.py`: тот отвечает
-только за запись уже полученных строк в БД (`MoexTradeIngestService`),
-этот модуль — за всё, что происходит вокруг записи: проверка пустого
-справочника, Redis-лок от наложения прогонов, поход в `MoexProvider`,
-курсорное дочитывание ленты по страницам, бюджет времени на прогон,
-логирование.
-
-Бюджет — общий абсолютный дедлайн на все сетевые вызовы прогона
-(`poll_budget_scope` вокруг каждого `get_trades_page`), а не
-`asyncio.timeout` вокруг всего опроса: запись страниц и сохранение
-курсора идут через async ORM в потоке, и отмена `await` поток не
-прерывает — запись дошла бы до конца уже после снятия лока. Порядок
-вложенности — как в `board.py`: `redis_lock` снаружи, дедлайн только
-вокруг сетевого вызова, `provider.aclose()` — в `finally` вне него.
-
-Сетевой сбой ISS (`ProviderConnectionError` после повторов клиента) или
-исчерпание бюджета (`PollBudgetExceededError`) прерывает прогон целиком —
-при сбое источник лежит и перебирать остальные бумаги бессмысленно, при
-бюджете время прогона вышло: одна строка WARNING и проброс исключения,
-оба в `throws` задачи — тик FAILURE без трейса (см.
-`moex_polling/errors.py`). Уже записанные страницы прерванной бумаги
-остаются в БД, но её курсор не сдвигается — следующий прогон перечитает
-их, запись идемпотентна; курсоры уже пройденных бумаг сохранены.
-"""
-
 import asyncio
+from datetime import UTC, datetime, timedelta
+from functools import partial
 from typing import TYPE_CHECKING
 
 from celery.utils.log import get_task_logger
 from django.conf import settings
+from redis.exceptions import ResponseError
 
 from tickfeeddmr.market_data.models import StockAsset
 from tickfeeddmr.market_data.providers.exceptions import ProviderConnectionError
 from tickfeeddmr.market_data.providers.moex import MoexProvider
 from tickfeeddmr.market_data.providers.moex.client import TRADES_PAGE_ROWS
+from tickfeeddmr.market_data.providers.moex.types import MOEX_DATA_DELAY_SECONDS
 from tickfeeddmr.market_data.services.locks import LockBusyError, redis_lock
 from tickfeeddmr.market_data.services.moex_ingest import MoexTradeIngestService
 from tickfeeddmr.market_data.services.moex_polling.errors import (
@@ -43,20 +20,51 @@ from tickfeeddmr.market_data.services.moex_polling.errors import (
     last_failure_note,
     poll_budget_scope,
 )
+from tickfeeddmr.market_data.services.moex_polling.settings import (
+    validate_poll_budget,
+    validate_trade_stream_settings,
+)
+from tickfeeddmr.market_data.services.moex_trade_stream import (
+    MoexTradeStreamPublisher,
+    trade_recency,
+)
+from tickfeeddmr.market_data.services.redis_retry import REDIS_TRANSIENT_ERRORS
+from tickfeeddmr.market_data.services.stream_selection import latest
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from tickfeeddmr.market_data.providers.moex.types import MoexTradeRow
+    from tickfeeddmr.market_data.services.stream_selection import SelectionRule
 
 logger = get_task_logger(__name__)
 
 TRADES_LOCK_KEY = "market_data:moex:lock:poll_trades"
 
+validate_poll_budget(
+    "TRADES",
+    settings.MOEX_TRADES_POLL_BUDGET_SECONDS,
+    settings.MOEX_TRADES_POLL_LOCK_TTL_SECONDS,
+)
+validate_trade_stream_settings()
+
 
 class MoexTradePoller:
     """Один прогон дочитывания ленты сделок MOEX по бумагам `track_trades=True`."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        selection_rule: SelectionRule[MoexTradeRow] | None = None,
+    ) -> None:
         self._service = MoexTradeIngestService()
+        # Правило отбора уровня 1 (см. `stream_selection.py`): что из пачки
+        # уйдёт в стрим для SSE. Подменяется без правки остального поллера.
+        self._selection_rule: SelectionRule[MoexTradeRow] = selection_rule or partial(
+            latest,
+            n=settings.MOEX_TRADE_STREAM_TOP_N,
+            key=trade_recency,
+        )
 
     async def run(self) -> None:
         """Публичная точка входа — пустой справочник/лок, затем сам опрос."""
@@ -91,6 +99,11 @@ class MoexTradePoller:
             base_url=settings.MOEX_ISS_BASE_URL,
             default_board=settings.MOEX_DEFAULT_BOARD,
         )
+        self._publisher: MoexTradeStreamPublisher = MoexTradeStreamPublisher(
+            redis_url=settings.REDIS_URL,
+            stream_key=settings.MOEX_TRADE_STREAM_KEY,
+            retention_seconds=settings.MOEX_TRADE_STREAM_RETENTION_SECONDS,
+        )
         try:
             for done, asset in enumerate(assets):
                 try:
@@ -111,7 +124,10 @@ class MoexTradePoller:
                     )
                     raise
         finally:
-            await self._provider.aclose()
+            try:
+                await self._provider.aclose()
+            finally:
+                await self._publisher.aclose()
 
     async def _poll_asset(
         self,
@@ -129,6 +145,11 @@ class MoexTradePoller:
         pages = 0
         new_cursor = cursor
         hit_page_limit = False
+        cutoff = datetime.now(UTC) - timedelta(
+            seconds=MOEX_DATA_DELAY_SECONDS
+            + settings.MOEX_TRADE_STREAM_FRESHNESS_SECONDS,
+        )
+        candidates: list[MoexTradeRow] = []
         while pages < page_limit:
             # Под дедлайном прогона — только сетевой вызов, запись страницы
             # и сохранение курсора ниже идут вне него.
@@ -146,6 +167,9 @@ class MoexTradePoller:
             if not rows:
                 break
             total_rows += await self._service.write_trades(asset, rows)
+            candidates = self._selection_rule(
+                [*candidates, *(row for row in rows if row.timestamp >= cutoff)],
+            )
             new_cursor = rows[-1].trade_id
             if len(rows) < TRADES_PAGE_ROWS:
                 break
@@ -156,15 +180,35 @@ class MoexTradePoller:
             asset.last_trade_no = new_cursor
             await asset.asave(update_fields=["last_trade_no"])
 
+        published = await self._publish(secid, candidates)
+
         logger.info(
             f"Лента {secid}: получено {total_rows} сделок за {pages} страниц, "
-            f"новый курсор {new_cursor}",
+            f"новый курсор {new_cursor}, в стрим отправлено {published}",
         )
         if hit_page_limit:
             logger.warning(
                 f"Лента {secid}: упёрлись в лимит страниц ({page_limit}), "
                 f"догон продолжится на следующем слоте",
             )
+
+    async def _publish(self, secid: str, candidates: list[MoexTradeRow]) -> int:
+        """Отправить отобранные сделки в стрим; сбой стрима задачу не роняет.
+
+        Курсор к этому моменту уже сохранён, а повтор прогона ничего бы не
+        исправил (перечитанные сделки — уже в БД). Живая лента — надстройка
+        над БД, её потеря на один тик не повод ронять опрос.
+        """
+        if not candidates:
+            return 0
+        try:
+            return await self._publisher.publish(secid, candidates)
+        except (*REDIS_TRANSIENT_ERRORS, ResponseError) as exc:
+            logger.warning(
+                f"Лента {secid}: не удалось отправить {len(candidates)} сделок в "
+                f"стрим для SSE ({exc}); в БД они сохранены, курсор сдвинут",
+            )
+            return 0
 
 
 async def poll_trades() -> None:
