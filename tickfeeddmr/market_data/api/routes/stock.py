@@ -5,6 +5,7 @@ from tickfeeddmr.market_data.api.controllers.stock import (
     StockAssetListController,
     StockHistoryController,
     StockIntradayController,
+    StockStreamController,
     StockTradesController,
 )
 
@@ -35,6 +36,11 @@ router = Router(
             "<str:secid>/history",
             StockHistoryController.as_view(),
             name="stock-asset-history",
+        ),
+        path(
+            "stream",
+            StockStreamController.as_view(),
+            name="stock-stream",
         ),
     ],
 )

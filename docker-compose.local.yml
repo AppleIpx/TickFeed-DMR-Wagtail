@@ -44,6 +44,7 @@ services:
   redis:
     image: docker.io/redis:7.2
     container_name: tickfeeddmr_local_redis
+    command: redis-server --maxmemory ${REDIS_MAXMEMORY:-512mb} --maxmemory-policy noeviction
     volumes:
       - tickfeeddmr_local_redis_data:/data
 

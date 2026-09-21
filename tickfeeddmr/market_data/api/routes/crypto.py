@@ -5,6 +5,7 @@ from tickfeeddmr.market_data.api.controllers.crypto import (
     CryptoAssetListController,
     CryptoHistoryController,
     CryptoIntradayController,
+    CryptoStreamController,
     CryptoTradesController,
 )
 
@@ -35,6 +36,11 @@ router = Router(
             "assets/<str:symbol>/history",
             CryptoHistoryController.as_view(),
             name="crypto-asset-history",
+        ),
+        path(
+            "stream",
+            CryptoStreamController.as_view(),
+            name="crypto-stream",
         ),
     ],
 )

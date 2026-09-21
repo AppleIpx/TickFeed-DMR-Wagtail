@@ -13,6 +13,9 @@ from tickfeeddmr.market_data.services.redis_retry import (
     RedisRetryLoop,
 )
 from tickfeeddmr.market_data.services.trade_stream import serialize_trade_event
+from tickfeeddmr.market_data.services.trade_stream_retention import (
+    stream_ceiling_minid,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,12 @@ class Command(BaseCommand):
                     await redis_client.xadd(
                         settings.MARKET_DATA_TRADE_STREAM_KEY,
                         serialize_trade_event(event),
+                        minid=stream_ceiling_minid(
+                            ceiling_seconds=(
+                                settings.MARKET_DATA_TRADE_STREAM_CEILING_SECONDS
+                            ),
+                        ),
+                        approximate=True,
                     )
                     retry.reset()
             except REDIS_TRANSIENT_ERRORS as exc:

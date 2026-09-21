@@ -41,6 +41,7 @@ services:
 
   redis:
     image: docker.io/redis:7.2
+    command: redis-server --maxmemory ${REDIS_MAXMEMORY:-512mb} --maxmemory-policy noeviction
 
   binance_stream:
     <<: *django

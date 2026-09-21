@@ -40,3 +40,21 @@ class InvalidPeriodError(DomainError):
     """`from` больше `to` в запросе `history` — ошибка запроса (422)."""
 
     status_code = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class StreamAssetsNotFoundError(DomainError):
+    """Для SSE-стрима нечего стримить — ни один тикер не найден или не активен.
+
+    404 (а не «200 + ошибка + закрытие потока») намеренно: браузерный
+    `EventSource` на 404 перестаёт переподключаться, а на закрытый поток с
+    200 будет долбиться каждые ~3 с. Текст ответа `EventSource` прочитать не
+    может — он для curl/Swagger.
+    """
+
+    status_code = HTTPStatus.NOT_FOUND
+
+
+class TooManyTickersError(DomainError):
+    """В `symbols`/`secids` больше тикеров, чем разрешено настройкой — 422."""
+
+    status_code = HTTPStatus.UNPROCESSABLE_ENTITY

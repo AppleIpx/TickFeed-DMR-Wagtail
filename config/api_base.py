@@ -1,9 +1,12 @@
 from http import HTTPStatus
 from typing import TYPE_CHECKING, ClassVar
 
+from asgiref.sync import sync_to_async
+from django.db import connections
 from dmr import Controller
 from dmr.errors import ErrorType
 from dmr.plugins.msgspec import MsgspecSerializer
+from dmr.streaming.sse import SSEController
 
 if TYPE_CHECKING:
     from django.http import HttpResponse
@@ -16,31 +19,16 @@ class DomainError(Exception):
     status_code: ClassVar[HTTPStatus]
 
 
-class BaseController(Controller[MsgspecSerializer]):
-    """Общий базовый контроллер: сериализация через msgspec"""
-
-    serializer = MsgspecSerializer
+class _DomainErrorHandling:
+    """Перевод `DomainError` в ответ — общий для обычных и SSE-контроллеров."""
 
     async def handle_async_error(
         self,
         endpoint: Endpoint,
-        controller: BaseController,
+        controller: Controller[MsgspecSerializer],
         exc: Exception,
     ) -> HttpResponse:
         """Перевести `DomainError` в ответ формата DMR `ErrorModel`.
-
-        Формат ответа — встроенный `ErrorModel` DMR
-        (`{"detail": [{"msg": ..., "type": ...}]}`), а не самописный
-        RFC 9457: `PathComponent`/`QueryComponent` уже автоматически
-        регистрируют для 404/422 схему именно такой формы
-        (`dmr/components.py::ComponentParser.provide_response_specs`,
-        `PathComponent.provide_response_specs`). DMR валидирует любой
-        возвращаемый ответ против зарегистрированной для этого статус-кода
-        схемы — свой формат (RFC 9457 или любой другой) требовал бы
-        одновременно регистрировать `ResponseSpec` на каждом методе
-        контроллера и **заменял бы** этим уже существующую схему, ломая
-        штатные ошибки валидации самого DMR на том же статус-коде. Проще
-        и безопаснее говорить на языке формата, который DMR и так ждёт.
 
         Любое исключение, не являющееся `DomainError`, пробрасывается
         дальше без изменений — этот метод отвечает только за доменные
@@ -57,3 +45,31 @@ class BaseController(Controller[MsgspecSerializer]):
             controller.format_error(str(exc), error_type=error_type),
             status_code=exc.status_code,
         )
+
+
+class BaseController(_DomainErrorHandling, Controller[MsgspecSerializer]):
+    """Общий базовый контроллер: сериализация через msgspec"""
+
+    serializer = MsgspecSerializer
+
+
+class BaseSSEController(_DomainErrorHandling, SSEController[MsgspecSerializer]):
+    """Общий базовый SSE-контроллер: msgspec, `DomainError`, освобождение БД."""
+
+    serializer = MsgspecSerializer
+    streaming_ping_seconds = None  # type: ignore[assignment]
+
+    @staticmethod
+    async def release_db_connections() -> None:
+        """Закрыть соединения с БД, открытые проверкой тикеров в начале ручки.
+
+        Django закрывает соединение по `request_finished`, а для SSE это
+        момент ухода клиента — то есть часы. Без явного закрытия каждый
+        открытый стрим держал бы соединение с Postgres всё время жизни.
+        Именно безусловный `close_all()`, а не `close_old_connections()`: тот
+        закрывает только «просроченные», а в production `CONN_MAX_AGE=60`,
+        так что живое соединение осталось бы открытым. `sync_to_async` идёт в
+        том же потоке, где async ORM держит соединение запроса. После вызова
+        генератор потока не должен обращаться к ORM.
+        """
+        await sync_to_async(connections.close_all)()

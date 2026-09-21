@@ -21,3 +21,16 @@ class IntradayPoint(msgspec.Struct, frozen=True):
     timestamp: datetime
     price: Decimal
     volume: Decimal
+
+
+class StreamTargets(msgspec.Struct, frozen=True):
+    """Результат резолва тикеров для SSE-стрима: кого стримим, что не нашлось.
+
+    `symbols_by_stream_key` — ключ, под которым тикер лежит в Redis Stream
+    (у крипты `trading_pair`, у акций `secid`), -> символ, под которым он
+    известен API. Отдельный тип, а не голый dict, чтобы контроллер и
+    презентер не знали, кому какой ключ принадлежит.
+    """
+
+    symbols_by_stream_key: dict[str, str]
+    unknown: list[str]

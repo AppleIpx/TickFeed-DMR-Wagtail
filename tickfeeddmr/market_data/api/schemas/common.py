@@ -82,3 +82,35 @@ class CursorQuery(msgspec.Struct, frozen=True):
 
     cursor: str | None = None
     limit: Annotated[int, msgspec.Meta(ge=1, le=MAX_LIMIT)] = DEFAULT_LIMIT
+
+
+class StreamWarningOut(
+    msgspec.Struct,
+    frozen=True,
+    tag_field="kind",
+    tag="warning",
+):
+    """Первое событие SSE-потока, если часть тикеров из запроса не найдена.
+
+    Поток по остальным тикерам при этом идёт. Если не найден ни один — вместо
+    потока 404 (см. `StreamAssetsNotFoundError`).
+    """
+
+    unknown: list[str]
+    detail: str
+
+
+class HeartbeatOut(
+    msgspec.Struct,
+    frozen=True,
+    tag_field="kind",
+    tag="heartbeat",
+):
+    """Служебное событие: поток жив, событий нет.
+
+    Встроенный ping DMR выключен (ломает завершение при уходе клиента),
+    поэтому heartbeat шлёт сам генератор. Для `EventSource` это именованное
+    событие: слушать через `addEventListener("heartbeat", ...)`.
+    """
+
+    timestamp: datetime
