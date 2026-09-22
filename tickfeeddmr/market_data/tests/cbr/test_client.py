@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import httpx
 import pytest
 
-from tickfeeddmr.market_data.providers import cbr
 from tickfeeddmr.market_data.providers.cbr.client import (
     MAX_ATTEMPTS,
     CbrDailyRatesClient,
@@ -25,13 +24,7 @@ if TYPE_CHECKING:
 
 BASE_URL = "https://cbr.testnet.example"
 
-
-@pytest.fixture(autouse=True)
-def _fast_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Как и в moex/test_client.py — реальный backoff тут не нужен, повторы
-    # должны отрабатывать в тестах как можно быстрее.
-    monkeypatch.setattr(cbr.client, "INITIAL_BACKOFF_SECONDS", 0.0)
-    monkeypatch.setattr(cbr.client, "MAX_BACKOFF_SECONDS", 0.0)
+pytestmark = pytest.mark.usefixtures("fast_cbr_backoff")
 
 
 def _daily_rates_xml(body: str) -> bytes:

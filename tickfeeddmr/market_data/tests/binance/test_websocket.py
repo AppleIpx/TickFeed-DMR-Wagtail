@@ -1,11 +1,3 @@
-"""Юнит-тесты `BinanceTradeStreamConsumer` на локальном `websockets.serve`.
-
-Реальный сокет на `localhost` — не мок HTTP-транспорта: `stream()` держит
-постоянное WS-соединение и сам переподключается при обрыве, это поведение
-(включая backoff/логирование) нельзя правдоподобно проверить без
-настоящего (пусть и локального) сервера.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -18,7 +10,6 @@ from typing import TYPE_CHECKING
 import pytest
 import websockets
 
-from tickfeeddmr.market_data.providers.binance import websocket as ws_module
 from tickfeeddmr.market_data.providers.binance.websocket import (
     BinanceTradeStreamConsumer,
 )
@@ -27,6 +18,8 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
 
     from websockets.asyncio.server import ServerConnection
+
+pytestmark = pytest.mark.usefixtures("fast_binance_ws_backoff")
 
 ANEXT_TIMEOUT_SECONDS = 5
 EXPECTED_BAD_PAYLOAD_COUNT = 2
@@ -63,14 +56,6 @@ async def _serving(
         yield f"ws://localhost:{port}"
 
 
-@pytest.fixture(autouse=True)
-def _fast_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Реальный backoff (1s -> 30s) не нужен в тестах — реконнект должен
-    # произойти как можно быстрее, само значение backoff здесь не проверяется.
-    monkeypatch.setattr(ws_module, "INITIAL_BACKOFF_SECONDS", 0.01)
-    monkeypatch.setattr(ws_module, "MAX_BACKOFF_SECONDS", 0.02)
-
-
 def test_stream_url_joins_pairs_lowercased_with_agg_trade_suffix() -> None:
     consumer = BinanceTradeStreamConsumer(
         ws_base_url="wss://stream.binance.com:9443",
@@ -85,9 +70,6 @@ def test_stream_url_joins_pairs_lowercased_with_agg_trade_suffix() -> None:
 async def test_stream_parses_agg_trade_and_maps_side() -> None:
     async def handler(connection: ServerConnection) -> None:
         await connection.send(_agg_trade_message(is_buyer_maker=True))
-        # Держим handler живым, пока клиент сам не закроет соединение (при
-        # gen.aclose()) — иначе `websockets.serve()` зависает на выходе,
-        # дожидаясь завершения этой корутины.
         await connection.wait_closed()
 
     async with _serving(handler) as base_url:
@@ -104,7 +86,7 @@ async def test_stream_parses_agg_trade_and_maps_side() -> None:
     assert event.trading_pair == "BTCUSDT"
     assert event.price == Decimal("50000.10")
     assert event.volume == Decimal("0.5")
-    assert event.side == "sell"  # is_buyer_maker=True -> "sell"
+    assert event.side == "sell"
     assert event.trade_id == "12345"
 
 
@@ -180,7 +162,7 @@ async def test_stream_skips_malformed_agg_trade_fields_without_reconnecting(
                 "data": {
                     "e": "aggTrade",
                     "s": AGG_TRADE_SYMBOL,
-                    "p": "not-a-decimal",  # decimal.InvalidOperation
+                    "p": "not-a-decimal",
                     "q": AGG_TRADE_QTY,
                     "m": False,
                     "T": AGG_TRADE_TIME_MS,
@@ -210,7 +192,7 @@ async def test_stream_skips_malformed_agg_trade_fields_without_reconnecting(
             await gen.aclose()
 
     assert event.trade_id == "1"
-    assert connection_count == 1  # ни разу не переподключались
+    assert connection_count == 1
 
     errors = [r.message for r in caplog.records if r.levelno == logging.ERROR]
     malformed_payload_errors = sum(

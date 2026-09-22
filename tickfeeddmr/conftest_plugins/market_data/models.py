@@ -40,16 +40,7 @@ _DAILY_CANDLES_CATCH_UP_TASK_NAMES = (
 
 @pytest.fixture(autouse=True)
 def _mock_daily_candles_catch_up_tasks(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Не даёт сигналам реально ходить в сеть в тестах.
-
-    `CELERY_TASK_ALWAYS_EAGER=True` в тестах выполняет `.delay()`
-    синхронно, в этом же процессе; тесты, использующие
-    `django_db(transaction=True)` (например `tests/api/`), реально
-    выполняют колбэки `transaction.on_commit` — без этой заглушки любая
-    фабрика, создающая `CryptoAsset`/`StockAsset`/`FiatCurrency`, вызвала
-    бы настоящий HTTP-запрос к Binance/MOEX/ЦБ РФ через
-    `post_save`-сигнал (`market_data/signals.py`).
-    """
+    """Не даёт сигналам реально ходить в сеть в тестах."""
     for task_name in _DAILY_CANDLES_CATCH_UP_TASK_NAMES:
         task = getattr(tasks, task_name)
         monkeypatch.setattr(task, "delay", MagicMock())
