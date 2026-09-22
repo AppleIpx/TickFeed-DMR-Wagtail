@@ -8,7 +8,6 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from tickfeeddmr.market_data.providers import moex
 from tickfeeddmr.market_data.providers.exceptions import (
     ProviderConnectionError,
     ProviderResponseError,
@@ -21,14 +20,7 @@ if TYPE_CHECKING:
 
 BASE_URL = "https://iss.testnet.example"
 
-
-@pytest.fixture(autouse=True)
-def _fast_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Реальный backoff (1s -> 8s, до MAX_ATTEMPTS попыток) не нужен в
-    # тестах — повторы должны отрабатывать как можно быстрее, само
-    # значение backoff здесь не проверяется.
-    monkeypatch.setattr(moex.client, "INITIAL_BACKOFF_SECONDS", 0.0)
-    monkeypatch.setattr(moex.client, "MAX_BACKOFF_SECONDS", 0.0)
+pytestmark = pytest.mark.usefixtures("fast_moex_backoff")
 
 
 BOARD_COLUMNS = [

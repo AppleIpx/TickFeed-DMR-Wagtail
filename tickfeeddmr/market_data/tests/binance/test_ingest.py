@@ -2,8 +2,7 @@
 
 Требует реальную БД (не sqlite) — как и остальные тесты моделей в
 проекте, гоняется через `just pytest` / `pytest --ds=config.settings.test`
-с поднятым Postgres, см. `crypto_asset` в
-`tickfeeddmr/conftest_plugins/market_data_fixtures.py`.
+с поднятым Postgres
 """
 
 from __future__ import annotations
