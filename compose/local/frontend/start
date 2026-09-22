@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -o errexit
+set -o nounset
+
+APP_HOME=/app
+STAMP="${APP_HOME}/node_modules/.install-stamp"
+
+if [ ! -f "${STAMP}" ] || ! cmp -s "${APP_HOME}/package-lock.json" "${STAMP}"; then
+    echo "package-lock.json разошёлся с node_modules — переустанавливаю зависимости..."
+    npm ci
+    cp "${APP_HOME}/package-lock.json" "${STAMP}"
+fi
+
+exec npm run dev

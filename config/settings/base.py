@@ -108,6 +108,7 @@ THIRD_PARTY_APPS = [
     "taggit",
     "django_celery_beat",
     "dmr",
+    "corsheaders",
 ]
 
 LOCAL_APPS = [
@@ -163,6 +164,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -507,6 +509,12 @@ WAGTAIL_ADMIN_URL = "cms/admin/"
 # Docs
 # ------------------------------------------------------------------------------
 WAGTAILDOCS_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx"]
+
+# CORS
+# ------------------------------------------------------------------------------
+CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_CREDENTIALS = False
 
 
 # Your stuff...

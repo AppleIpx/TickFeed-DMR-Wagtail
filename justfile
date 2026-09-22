@@ -40,3 +40,7 @@ manage +args:
 # pytest: Run tests with pytest.
 pytest *args:
     @docker compose run --rm django pytest {{args}}
+
+# front: Executes an `npm` command inside the frontend container.
+front +args:
+    @docker compose run --rm frontend npm {{args}}

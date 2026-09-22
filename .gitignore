@@ -336,3 +336,8 @@ graphify-out
 CLAUDE.md
 .claude
 openspec
+
+### Frontend
+frontend/node_modules/
+frontend/dist/
+!frontend/src/lib/

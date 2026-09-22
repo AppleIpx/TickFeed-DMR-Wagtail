@@ -29,6 +29,21 @@ services:
       retries: 10
       start_period: 10s
 
+  frontend:
+    build:
+      context: .
+      dockerfile: ./compose/local/frontend/Dockerfile
+    image: tickfeeddmr_local_frontend
+    container_name: tickfeeddmr_local_frontend
+    depends_on:
+      - django
+    volumes:
+      - /app/node_modules
+      - ./frontend:/app:z
+    ports:
+      - '3000:3000'
+    command: /start
+
   postgres:
     build:
       context: .
