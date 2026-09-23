@@ -44,3 +44,7 @@ pytest *args:
 # front: Executes an `npm` command inside the frontend container.
 front +args:
     @docker compose run --rm frontend npm {{args}}
+
+schema:
+    @docker compose run --rm -T django python ./manage.py dmr_export_schema config.api_router.schema --indent 2 --no-ensure-ascii > frontend/openapi.json.tmp
+    @mv frontend/openapi.json.tmp frontend/openapi.json

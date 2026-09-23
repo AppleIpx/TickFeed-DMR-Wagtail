@@ -1,64 +1,89 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { useCryptoAssets } from "@/query/hooks/crypto";
+import { useCryptoTradeStream } from "@/query/hooks/useTradeStream";
 
-type PingState =
-  | { status: "loading" }
-  | { status: "ok"; assets: number }
-  | { status: "error"; message: string };
+function parseTickers(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+}
 
 export default function App() {
-  const [ping, setPing] = useState<PingState>({ status: "loading" });
+  const [filterInput, setFilterInput] = useState("");
+  const [tickers, setTickers] = useState<string[]>([]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/crypto/assets/`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const payload: unknown = await response.json();
-        if (!Array.isArray(payload)) {
-          throw new Error("Ожидался список активов");
-        }
-        setPing({ status: "ok", assets: payload.length });
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setPing({
-          status: "error",
-          message: error instanceof Error ? error.message : String(error),
-        });
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const assets = useCryptoAssets();
+  const stream = useCryptoTradeStream({ tickers, bufferSize: 20 });
 
   return (
     <main>
       <h1>TickFeedDmr</h1>
-      <p>Скелет фронтенда, этап 10.1. Экраны появятся на этапе 10.4.</p>
       <p>
-        Бэкенд: <code>{import.meta.env.VITE_API_BASE_URL}</code>
+        Смоук-экран слоя данных (этап 10.2). Бэкенд:{" "}
+        <code>{import.meta.env.VITE_API_BASE_URL}</code>
       </p>
-      {ping.status === "loading" && <p>Проверяю связь с API…</p>}
-      {ping.status === "ok" && (
+
+      <section>
+        <h2>Крипто-активы (REST)</h2>
+        {assets.isPending && <p>Загружаю список…</p>}
+        {assets.isError && <p>Ошибка: {assets.error.message}</p>}
+        {assets.data && (
+          <ul>
+            {assets.data.map((asset) => (
+              <li key={asset.symbol}>
+                {asset.symbol} — {asset.display_name}
+                {asset.is_active ? "" : " (выключен)"}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2>Живой поток сделок (SSE)</h2>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            setTickers(parseTickers(filterInput));
+          }}
+        >
+          <label>
+            Фильтр <code>?symbols=</code> (пусто — все активные):{" "}
+            <input
+              value={filterInput}
+              onChange={(event) => {
+                setFilterInput(event.target.value);
+              }}
+              placeholder="BTC,ETH"
+            />
+          </label>{" "}
+          <button type="submit">Переоткрыть поток</button>
+        </form>
+
         <p>
-          API отвечает: активных крипто-пар — <strong>{ping.assets}</strong>
+          Состояние: <strong>{stream.status}</strong>
+          {stream.lastHeartbeatAt && <> · heartbeat: {stream.lastHeartbeatAt}</>}
         </p>
-      )}
-      {ping.status === "error" && (
-        <p>
-          API недоступен: <strong>{ping.message}</strong> (смотреть консоль —
-          ошибка CORS видна только там)
-        </p>
-      )}
+        {stream.warning && (
+          <p>
+            Предупреждение: {stream.warning.detail} (не найдены:{" "}
+            {stream.warning.unknown.join(", ")})
+          </p>
+        )}
+        {stream.fatal && <p>Поток остановлен: {stream.fatal.message}</p>}
+
+        <ol>
+          {stream.trades.map((trade) => (
+            <li key={`${trade.symbol}-${trade.trade_id}`}>
+              {trade.timestamp} · {trade.symbol} · {trade.side} · {trade.price} ·{" "}
+              {trade.volume} · лаг {trade.data_delay_seconds} с
+            </li>
+          ))}
+        </ol>
+        {stream.trades.length === 0 && <p>Сделок пока не было.</p>}
+      </section>
     </main>
   );
 }
