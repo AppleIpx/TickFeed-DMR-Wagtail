@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from asgiref.sync import sync_to_async
+from django.test import override_settings
 
 from tickfeeddmr.market_data.services.queries.crypto import get_history, get_intraday
 from tickfeeddmr.market_data.services.queries.errors import AssetNotFoundError
@@ -92,3 +93,35 @@ async def test_get_history_filters_by_period(crypto_asset: CryptoAsset) -> None:
 async def test_get_history_unknown_symbol_raises_asset_not_found() -> None:
     with pytest.raises(AssetNotFoundError):
         await get_history("UNKNOWN", date_from=None, date_to=None)
+
+
+@override_settings(MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS=None)
+async def test_get_history_defaults_to_earliest_candle_when_unconfigured(
+    crypto_asset: CryptoAsset,
+) -> None:
+    """Без параметров и без настройки — вся история актива, а не последний год.
+
+    Регрессия: у ETH в проде без параметров отдавало `today-365` вместо
+    полной истории с 2017-08-17, потому что дефолт был захардкожен.
+    """
+    old_candle = await sync_to_async(CryptoDailyCandleFactory.create)(
+        asset=crypto_asset,
+        date=datetime(2017, 8, 17, tzinfo=UTC).date(),
+    )
+    recent_candle = await sync_to_async(CryptoDailyCandleFactory.create)(
+        asset=crypto_asset,
+        date=datetime.now(UTC).date(),
+    )
+
+    candles = await get_history(crypto_asset.symbol, date_from=None, date_to=None)
+
+    assert {candle.pk for candle in candles} == {old_candle.pk, recent_candle.pk}
+
+
+@override_settings(MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS=None)
+async def test_get_history_returns_empty_list_when_asset_has_no_candles(
+    crypto_asset: CryptoAsset,
+) -> None:
+    candles = await get_history(crypto_asset.symbol, date_from=None, date_to=None)
+
+    assert candles == []

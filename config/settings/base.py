@@ -477,6 +477,11 @@ FIAT_DAILY_CANDLES_POLL_LOCK_TTL_SECONDS = env.int(
     default=75,
 )
 
+MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS = env.int(
+    "MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS",
+    default=None,
+)
+
 # django-allauth
 # ------------------------------------------------------------------------------
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)

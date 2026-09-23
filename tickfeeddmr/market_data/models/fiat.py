@@ -1,6 +1,7 @@
 from django.core.validators import RegexValidator
 from django.db.models import (
     CASCADE,
+    BooleanField,
     CharField,
     DateField,
     DateTimeField,
@@ -38,6 +39,18 @@ class FiatCurrency(AssetBase):
         help_text=_(
             "Внутренний код ЦБ РФ (атрибут ID в ответе XML_daily.asp, "
             "например R01235) — по нему опрос курсов резолвит строки",
+        ),
+    )
+    history_backfilled = BooleanField(
+        _("полная история загружена"),
+        default=False,
+        help_text=_(
+            "Показывает, загружена ли по этой валюте вся история курсов "
+            "с момента её появления, а не только текущие значения за "
+            "последние дни. Пока не отмечено — при ближайшем обновлении "
+            "системой валюта автоматически докачает всю историю целиком, "
+            "и после этого отметка проставится сама. Поле только для "
+            "чтения — заполняется автоматически, вручную менять не нужно.",
         ),
     )
 

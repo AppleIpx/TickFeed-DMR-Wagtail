@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from asgiref.sync import sync_to_async
+from django.test import override_settings
 
 from tickfeeddmr.market_data.tests.factories import (
     FiatCurrencyFactory,
@@ -105,3 +106,43 @@ async def test_history_returns_rates_within_period(
     assert len(body) == 1
     assert body[0]["rate"] == str(snapshot.price)
     assert body[0]["effective_date"] == "2026-06-01"
+
+
+@override_settings(MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS=None)
+async def test_history_without_params_defaults_to_earliest_rate_when_unconfigured(
+    dmr_async_client: DMRAsyncClient,
+    fiat_currency: FiatCurrency,
+) -> None:
+    """Без параметров и без настройки — вся история, а не последний год.
+
+    Регрессия по образцу ETH в проде (см. `market_data/tests/api/
+    test_queries_crypto.py`): курс старше года не должен отсекаться.
+    """
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=datetime(2017, 8, 17, tzinfo=UTC).date(),
+    )
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=datetime.now(UTC).date(),
+    )
+
+    response = await dmr_async_client.get(
+        f"/api/fiat/rates/{fiat_currency.iso_code}/history",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert len(response.json()) == 2  # noqa: PLR2004
+
+
+@override_settings(MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS=None)
+async def test_history_without_params_returns_empty_list_without_rates(
+    dmr_async_client: DMRAsyncClient,
+    fiat_currency: FiatCurrency,
+) -> None:
+    response = await dmr_async_client.get(
+        f"/api/fiat/rates/{fiat_currency.iso_code}/history",
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == []

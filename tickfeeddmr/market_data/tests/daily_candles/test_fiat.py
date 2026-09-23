@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import ANY, AsyncMock, patch
 
 import pytest
 from asgiref.sync import sync_to_async
@@ -15,7 +15,10 @@ from tickfeeddmr.market_data.services.daily_candles.fiat import (
     HISTORY_START_DATE,
     _denominated_rate,
 )
-from tickfeeddmr.market_data.tests.factories import FiatPriceSnapshotFactory
+from tickfeeddmr.market_data.tests.factories import (
+    FiatCurrencyFactory,
+    FiatPriceSnapshotFactory,
+)
 
 if TYPE_CHECKING:
     from tickfeeddmr.market_data.models import FiatCurrency
@@ -77,11 +80,22 @@ async def test_catch_up_asset_cold_start_requests_from_history_start(
     assert result.written == 1
     assert result.already_up_to_date is False
     assert await fiat_daily_candles.FiatPriceSnapshot.objects.acount() == 1
+    await fiat_currency.arefresh_from_db()
+    assert fiat_currency.history_backfilled is True
 
 
 async def test_catch_up_asset_resumes_from_day_after_last_snapshot(
     fiat_currency: FiatCurrency,
 ) -> None:
+    """Курсор из последней записи разрешён только когда история уже догнана.
+
+    Без предварительно выставленного `history_backfilled=True` это был бы
+    в точности баг-сценарий из `test_catch_up_asset_not_backfilled_ignores_
+    recent_only_cursor` ниже — здесь наоборот, проверяем легитимный "тёплый"
+    повторный догон уже полностью закрытой истории.
+    """
+    fiat_currency.history_backfilled = True
+    await fiat_currency.asave(update_fields=["history_backfilled"])
     await sync_to_async(FiatPriceSnapshotFactory.create)(
         asset=fiat_currency,
         effective_date=date(2026, 9, 10),
@@ -106,6 +120,8 @@ async def test_catch_up_asset_resumes_from_day_after_last_snapshot(
 async def test_catch_up_asset_already_up_to_date_skips_client_entirely(
     fiat_currency: FiatCurrency,
 ) -> None:
+    fiat_currency.history_backfilled = True
+    await fiat_currency.asave(update_fields=["history_backfilled"])
     await sync_to_async(FiatPriceSnapshotFactory.create)(
         asset=fiat_currency,
         effective_date=date(2026, 9, 17),
@@ -120,6 +136,100 @@ async def test_catch_up_asset_already_up_to_date_skips_client_entirely(
     client_cls.assert_not_called()
     assert result.written == 0
     assert result.already_up_to_date is True
+
+
+async def test_catch_up_asset_not_backfilled_ignores_recent_only_cursor(
+    fiat_currency: FiatCurrency,
+) -> None:
+    """Регрессия: `poll_cbr_rates` мог записать курс на сегодня раньше,
+    чем когда-либо отработал исторический догон. `MAX(effective_date)`
+    в такой ситуации выглядит "свежим" (`>= until`), но исторических
+    записей от начала истории ЦБ ещё нет ни одной — до выставления
+    `history_backfilled` курсор из последней записи не должен считаться
+    надёжным ни для отсечения запроса (`already_up_to_date`), ни для
+    выбора `date_from`. Живой случай, воспроизведённый на dev-стеке: у
+    USD было 5 точек за последние дни (от `poll_cbr_rates`) и ни одной
+    записи истории до них.
+    """
+    assert fiat_currency.history_backfilled is False
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=fiat_currency,
+        effective_date=date(2026, 9, 17),
+    )
+    instance = _mock_client([_row(date(1999, 1, 1))])
+
+    with patch(CLIENT_TARGET, return_value=instance):
+        result = await fiat_daily_candles.catch_up_asset(
+            fiat_currency,
+            until=date(2026, 9, 17),
+        )
+
+    instance.get_dynamic_rates.assert_awaited_once_with(
+        fiat_currency.cbr_id,
+        date_from=HISTORY_START_DATE,
+        date_to=date(2026, 9, 17),
+    )
+    assert result.already_up_to_date is False
+    assert result.written == 1
+    await fiat_currency.arefresh_from_db()
+    assert fiat_currency.history_backfilled is True
+
+
+async def test_catch_up_asset_marks_history_backfilled_even_with_no_rows(
+    fiat_currency: FiatCurrency,
+) -> None:
+    """Флаг ставится по факту успешного полного запроса, не по наличию строк.
+
+    Иначе валюта без данных за весь запрошенный диапазон (тонкий, но
+    возможный случай) переспрашивала бы всю историю с `HISTORY_START_DATE`
+    каждую ночь вместо того, чтобы один раз убедиться в её отсутствии.
+    """
+    instance = _mock_client([])
+
+    with patch(CLIENT_TARGET, return_value=instance):
+        result = await fiat_daily_candles.catch_up_asset(
+            fiat_currency,
+            until=date(2026, 9, 17),
+        )
+
+    assert result.written == 0
+    assert result.already_up_to_date is False
+    await fiat_currency.arefresh_from_db()
+    assert fiat_currency.history_backfilled is True
+
+
+async def test_catch_up_all_assets_prioritizes_not_backfilled_candidates() -> None:
+    """Регрессия на приоритет кандидатов в `catch_up_all_assets`.
+
+    Без сортировки по `history_backfilled` первой валюта с ежедневной
+    "свежей" точкой (симулирует `poll_cbr_rates`), но без исторического
+    догона выглядела бы самой актуальной по `last_snapshot_date` и при
+    ограниченном `limit` систематически вытеснялась бы в конец очереди —
+    т.е. никогда не долечивалась бы на проде с активным трафиком новых
+    валют.
+    """
+    healthy_but_stale = await sync_to_async(FiatCurrencyFactory.create)(
+        history_backfilled=True,
+    )
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=healthy_but_stale,
+        effective_date=date(2020, 1, 1),
+    )
+    broken_not_backfilled = await sync_to_async(FiatCurrencyFactory.create)()
+    await sync_to_async(FiatPriceSnapshotFactory.create)(
+        asset=broken_not_backfilled,
+        effective_date=date(2026, 9, 20),
+    )
+
+    instance = _mock_client([])
+    with patch(CLIENT_TARGET, return_value=instance):
+        await fiat_daily_candles.catch_up_all_assets(limit=1)
+
+    instance.get_dynamic_rates.assert_awaited_once_with(
+        broken_not_backfilled.cbr_id,
+        date_from=HISTORY_START_DATE,
+        date_to=ANY,
+    )
 
 
 async def test_catch_up_asset_ignores_conflicting_duplicate_rows(
