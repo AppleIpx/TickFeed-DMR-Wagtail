@@ -13,6 +13,8 @@ export interface TradeTapeRow {
   amount: string;
   side: "buy" | "sell";
   note?: string;
+  /** Тикер сделки — только когда лента совмещает несколько бумаг (`/stocks`). */
+  ticker?: string;
 }
 
 type CryptoTradeLike = Pick<
@@ -24,27 +26,55 @@ type StockTradeLike = Pick<
   "trade_id" | "timestamp" | "price" | "quantity" | "side" | "period"
 >;
 
+/**
+ * `trade_id` уникален только в пределах одного тикера (у акций MOEX это
+ * `int`, глобальная уникальность между разными бумагами не гарантирована).
+ * На `/crypto`/одиночном `/stocks` без тикера префикс не добавляется —
+ * `id` не меняется по сравнению с 10.3.
+ */
+function rowId(tradeId: string, ticker: string | undefined): string {
+  return ticker ? `${ticker}:${tradeId}` : tradeId;
+}
+
 /** REST-страница (`CryptoTradeOut`) и SSE-событие (`CryptoTradeEventOut`)
  *  структурно совпадают в этих полях — общий адаптер для обоих. */
-export function cryptoTradeToRow(event: CryptoTradeLike): TradeTapeRow {
+export function cryptoTradeToRow(event: CryptoTradeLike, ticker?: string): TradeTapeRow {
   return {
-    id: event.trade_id,
+    id: rowId(event.trade_id, ticker),
     timestamp: event.timestamp,
     price: event.price,
     amount: event.volume,
     side: event.side,
+    ticker,
   };
 }
 
-export function stockTradeToRow(event: StockTradeLike): TradeTapeRow {
+export function stockTradeToRow(event: StockTradeLike, ticker?: string): TradeTapeRow {
   return {
-    id: String(event.trade_id),
+    id: rowId(String(event.trade_id), ticker),
     timestamp: event.timestamp,
     price: event.price,
     amount: String(event.quantity),
     side: event.side,
     note: event.period,
+    ticker,
   };
+}
+
+/**
+ * Слияние живых (SSE) и исторических (REST) строк без дублей по `id` —
+ * живая версия сделки приоритетнее, если id совпал. Используется на
+ * каждом экране, который совмещает REST-ленту при загрузке с последующим
+ * живым потоком (`/crypto`, `/stocks`).
+ */
+export function mergeTapeRows(
+  live: readonly TradeTapeRow[],
+  rest: readonly TradeTapeRow[],
+  limit = 30,
+): TradeTapeRow[] {
+  const liveIds = new Set(live.map((row) => row.id));
+  const filteredRest = rest.filter((row) => !liveIds.has(row.id));
+  return [...live, ...filteredRest].slice(0, limit);
 }
 
 const HIGHLIGHT_MS = 700;
@@ -71,6 +101,7 @@ function TradeRow({ row }: { row: TradeTapeRow }) {
       )}
     >
       <span className="flex items-center gap-1.5 tabular text-muted-foreground">
+        {row.ticker && <span className="font-medium text-foreground">{row.ticker}</span>}
         {formatMoscowTime(row.timestamp)}
         {row.note && <span className="text-xs opacity-70">· {row.note}</span>}
       </span>

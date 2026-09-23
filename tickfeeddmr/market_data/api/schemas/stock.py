@@ -17,6 +17,19 @@ class SecidPath(msgspec.Struct, frozen=True):
     secid: str
 
 
+class StockAssetOut(AssetOut, frozen=True):
+    """Акция в списке `GET /api/stocks/` — с флагом ленты сделок.
+
+    `track_trades` нужен фронту, чтобы решить, звать ли `/trades` и
+    подписываться ли на бумагу в SSE-стриме: для бумаг без ленты (см.
+    `models/stock.py::StockAsset.track_trades`) обе ручки отвечают 404.
+    Остальные ответы домена (`StockCurrentOut` и т.д.) флаг не несут —
+    он важен только там, где бумагу выбирают для ленты/потока.
+    """
+
+    track_trades: bool
+
+
 class StockCurrentOut(msgspec.Struct, frozen=True):
     """Текущий агрегированный снимок борда по акции"""
 
