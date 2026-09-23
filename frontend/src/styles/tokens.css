@@ -1,0 +1,100 @@
+/*
+ * Токены дизайн-системы (этап 10.3). Единственное место с цветами —
+ * компоненты обращаются только к переменным ниже, ни одного hex-значения
+ * в компонентах быть не должно.
+ *
+ * Нейтральная база — стандартная палитра shadcn/ui (стиль "new-york",
+ * `baseColor: neutral`), заданная в oklch. Сверху — доменные токены
+ * дашборда котировок: сторона сделки (`--buy`/`--sell`), свежесть данных
+ * (`--realtime`/`--stale`) и палитра для сравнения нескольких бумаг на
+ * одном графике (`--chart-1`…`--chart-6`, `PriceChart`).
+ */
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* Сравнение нескольких бумаг на PriceChart — до шести серий на графике. */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --chart-6: oklch(0.58 0.19 320);
+
+  /* Сторона сделки (TradeTape, PriceChart) — цвет + иконка, не только цвет. */
+  --buy: oklch(0.6 0.16 142);
+  --buy-foreground: oklch(0.985 0 0);
+  --sell: oklch(0.62 0.22 25);
+  --sell-foreground: oklch(0.985 0 0);
+
+  /* Свежесть данных (FreshnessBadge): реальное время / устаревшие сильнее
+     заявленной задержки источника. */
+  --realtime: oklch(0.6 0.14 155);
+  --realtime-foreground: oklch(0.985 0 0);
+  --stale: oklch(0.7 0.19 55);
+  --stale-foreground: oklch(0.145 0 0);
+
+  --font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", monospace;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --chart-6: oklch(0.7 0.19 320);
+
+  --buy: oklch(0.72 0.17 142);
+  --buy-foreground: oklch(0.145 0 0);
+  --sell: oklch(0.7 0.2 25);
+  --sell-foreground: oklch(0.145 0 0);
+
+  --realtime: oklch(0.72 0.15 155);
+  --realtime-foreground: oklch(0.145 0 0);
+  --stale: oklch(0.75 0.17 70);
+  --stale-foreground: oklch(0.145 0 0);
+}

@@ -17,6 +17,7 @@ export type StockPricePoint = Schemas["StockPricePointOut"];
 
 export type Intraday = Schemas["IntradayOut"];
 export type PricePoint = Schemas["PricePointOut"];
+export type LinearPricePoint = Schemas["LinearPricePointOut"];
 
 export type FiatRate = Schemas["FiatRateOut"];
 export type FiatRatePoint = Schemas["FiatRatePointOut"];

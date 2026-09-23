@@ -20,10 +20,16 @@ import { queryKeys } from "@/query/keys";
 
 const DEFAULT_BUFFER_SIZE = 50;
 
-export interface UseTradeStreamOptions {
+export interface UseTradeStreamOptions<T = never> {
   tickers?: readonly string[];
   enabled?: boolean;
   bufferSize?: number;
+  /**
+   * Живой тик мимо React-состояния — для `PriceChart.series.update()`.
+   * Вызывается синхронно на каждую сделку, помимо обычного накопления в
+   * `trades`; не должен запускать перерисовку дерева самостоятельно.
+   */
+  onTrade?: (event: T) => void;
 }
 
 export interface TradeStreamState<T> {
@@ -44,7 +50,12 @@ type StreamOpener<E extends { kind: string }> = (options: {
 function useStream<E extends { kind: string }>(
   open: StreamOpener<E>,
   invalidateKey: readonly string[],
-  { tickers, enabled = true, bufferSize = DEFAULT_BUFFER_SIZE }: UseTradeStreamOptions,
+  {
+    tickers,
+    enabled = true,
+    bufferSize = DEFAULT_BUFFER_SIZE,
+    onTrade,
+  }: UseTradeStreamOptions<TradeOf<E>>,
 ): TradeStreamState<TradeOf<E>> {
   const queryClient = useQueryClient();
 
@@ -65,7 +76,15 @@ function useStream<E extends { kind: string }>(
     bufferSizeRef.current = bufferSize;
   }, [bufferSize]);
 
+  // Актуальный колбэк в ref: не пересоздаём соединение при каждом рендере
+  // компонента-подписчика (например, при смене периода графика).
+  const onTradeRef = useRef(onTrade);
+  useEffect(() => {
+    onTradeRef.current = onTrade;
+  }, [onTrade]);
+
   const pushTrade = useCallback((event: TradeOf<E>) => {
+    onTradeRef.current?.(event);
     setTrades((previous) => [event, ...previous].slice(0, bufferSizeRef.current));
   }, []);
 
@@ -114,7 +133,7 @@ function useStream<E extends { kind: string }>(
 }
 
 export function useCryptoTradeStream(
-  options: UseTradeStreamOptions = {},
+  options: UseTradeStreamOptions<CryptoTradeEvent> = {},
 ): TradeStreamState<CryptoTradeEvent> {
   return useStream<CryptoStreamEvent>(
     openCryptoTradeStream,
@@ -124,7 +143,7 @@ export function useCryptoTradeStream(
 }
 
 export function useStockTradeStream(
-  options: UseTradeStreamOptions = {},
+  options: UseTradeStreamOptions<StockTradeEvent> = {},
 ): TradeStreamState<StockTradeEvent> {
   return useStream<StockStreamEvent>(
     openStockTradeStream,
