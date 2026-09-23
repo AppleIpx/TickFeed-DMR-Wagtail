@@ -11,6 +11,7 @@ from tickfeeddmr.market_data.api.presenters.common import (
 )
 from tickfeeddmr.market_data.api.presenters.stream import sse_events, stream_warning
 from tickfeeddmr.market_data.api.schemas.stock import (
+    StockAssetOut,
     StockCurrentOut,
     StockPricePointOut,
     StockTradeEventOut,
@@ -50,6 +51,22 @@ def _day_start_utc(day: date) -> datetime:
 
 def _optional_decimal_str(value: Decimal | None) -> str | None:
     return None if value is None else str(value)
+
+
+def asset_list_out(assets: Sequence[StockAsset]) -> list[StockAssetOut]:
+    """Список акций с флагом ленты сделок.
+
+    Фронт решает по нему, звать ли `/trades`/подписываться в SSE.
+    """
+    return [
+        StockAssetOut(
+            symbol=asset.symbol,
+            display_name=asset.display_name,
+            is_active=asset.is_active,
+            track_trades=asset.track_trades,
+        )
+        for asset in assets
+    ]
 
 
 def current_out(asset: StockAsset, snapshot: StockPriceSnapshot) -> StockCurrentOut:

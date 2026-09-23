@@ -2,8 +2,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router";
 
-import App from "./App";
+import { router } from "./app/router";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { queryClient } from "./query/queryClient";
 import "./styles/index.css";
@@ -17,7 +18,7 @@ createRoot(container).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <App />
+        <RouterProvider router={router} />
       </TooltipProvider>
       {/* Devtools — девзависимость: прод-сборки в скоупе этапа 10 нет. */}
       <ReactQueryDevtools initialIsOpen={false} />

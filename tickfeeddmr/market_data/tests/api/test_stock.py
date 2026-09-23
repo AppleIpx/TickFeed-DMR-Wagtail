@@ -36,6 +36,22 @@ async def test_list_assets_returns_only_active_assets(
     assert symbols == [stock_asset.symbol]
 
 
+async def test_list_assets_returns_track_trades_flag(
+    dmr_async_client: DMRAsyncClient,
+) -> None:
+    tracked = await sync_to_async(StockAssetFactory.create)(track_trades=True)
+    untracked = await sync_to_async(StockAssetFactory.create)(track_trades=False)
+
+    response = await dmr_async_client.get("/api/stocks/")
+
+    assert response.status_code == HTTPStatus.OK
+    track_trades_by_symbol = {
+        item["symbol"]: item["track_trades"] for item in response.json()
+    }
+    assert track_trades_by_symbol[tracked.symbol] == tracked.track_trades
+    assert track_trades_by_symbol[untracked.symbol] == untracked.track_trades
+
+
 async def test_current_returns_board_snapshot_with_string_and_int_fields(
     dmr_async_client: DMRAsyncClient,
     stock_asset: StockAsset,

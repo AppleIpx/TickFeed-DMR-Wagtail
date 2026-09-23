@@ -10,6 +10,7 @@ export type CryptoCurrent = Schemas["CryptoCurrentOut"];
 export type CryptoTrade = Schemas["CryptoTradeOut"];
 export type CryptoTradePage = Schemas["CursorPage_CryptoTradeOut_"];
 
+export type StockAsset = Schemas["StockAssetOut"];
 export type StockCurrent = Schemas["StockCurrentOut"];
 export type StockTrade = Schemas["StockTradeOut"];
 export type StockTradePage = Schemas["CursorPage_StockTradeOut_"];

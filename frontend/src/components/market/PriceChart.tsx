@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { LineSeries, PriceScaleMode, createChart } from "lightweight-charts";
 import type { IChartApi, ISeriesApi, LineData, UTCTimestamp } from "lightweight-charts";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { buildChartOptions, chartSeriesColor } from "@/components/market/chartTheme";
 
 export interface PriceChartSeries {
@@ -25,6 +26,10 @@ export interface PriceChartProps {
   mode?: PriceChartMode;
   scale?: PriceChartScale;
   height?: number;
+  /** Данные ещё грузятся — скелетон поверх графика, не пустой холст. */
+  loading?: boolean;
+  /** Подпись для пустого состояния (данных за период нет). */
+  emptyLabel?: string;
 }
 
 /**
@@ -33,7 +38,14 @@ export interface PriceChartProps {
  * тик иначе стоил бы перерисовки всего дерева компонентов.
  */
 export const PriceChart = forwardRef<PriceChartHandle, PriceChartProps>(function PriceChart(
-  { series, mode = "absolute", scale = "intraday", height = 360 },
+  {
+    series,
+    mode = "absolute",
+    scale = "intraday",
+    height = 360,
+    loading = false,
+    emptyLabel = "Нет данных за выбранный период.",
+  },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -166,5 +178,20 @@ export const PriceChart = forwardRef<PriceChartHandle, PriceChartProps>(function
     [],
   );
 
-  return <div ref={containerRef} style={{ height }} className="w-full" />;
+  const isEmpty = !loading && series.every((item) => item.points.length === 0);
+
+  return (
+    <div className="relative w-full" style={{ height }}>
+      <div ref={containerRef} className="absolute inset-0" />
+      {/* z-10: lightweight-charts ставит собственным canvas'ам/логотипу
+          явный z-index, простого порядка в DOM недостаточно, чтобы
+          оверлей оказался поверх графика. */}
+      {loading && <Skeleton className="absolute inset-0 z-10" />}
+      {isEmpty && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md border border-dashed bg-card">
+          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+        </div>
+      )}
+    </div>
+  );
 });

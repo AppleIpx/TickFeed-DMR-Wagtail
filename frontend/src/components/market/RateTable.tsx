@@ -9,6 +9,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/market/Sparkline";
 import { formatMoscowDate, formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useFiatHistory } from "@/query/hooks/fiat";
 import type { FiatRate } from "@/api/types";
 
@@ -34,11 +35,14 @@ function RateSparklineCell({ isoCode }: { isoCode: string }) {
 
 export interface RateTableProps {
   rates: readonly FiatRate[];
+  /** Выбранный код — подсвечивает строку (экран `/fiat` показывает её график). */
+  selected?: string;
+  onSelect?: (isoCode: string) => void;
 }
 
 /** Таблица курсов ЦБ РФ — одна точка в сутки, живого графика по решению
  *  этапа 9 нет, здесь только спарклайн последних 30 дней. */
-export function RateTable({ rates }: RateTableProps) {
+export function RateTable({ rates, selected, onSelect }: RateTableProps) {
   if (rates.length === 0) {
     return <p className="text-sm text-muted-foreground">Список валют пуст.</p>;
   }
@@ -56,7 +60,14 @@ export function RateTable({ rates }: RateTableProps) {
       </TableHeader>
       <TableBody>
         {rates.map((rate) => (
-          <TableRow key={rate.iso_code}>
+          <TableRow
+            key={rate.iso_code}
+            onClick={onSelect ? () => onSelect(rate.iso_code) : undefined}
+            className={cn(
+              onSelect && "cursor-pointer",
+              selected === rate.iso_code && "bg-accent",
+            )}
+          >
             <TableCell className="font-medium tabular">{rate.iso_code}</TableCell>
             <TableCell>{rate.asset.display_name}</TableCell>
             <TableCell className="text-right tabular">{formatPrice(rate.rate)}</TableCell>

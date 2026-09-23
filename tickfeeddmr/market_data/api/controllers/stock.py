@@ -12,9 +12,7 @@ from dmr.streaming.sse import SSEvent  # noqa: TC002
 
 from config.api_base import BaseController, BaseSSEController
 from tickfeeddmr.market_data.api.presenters import stock as stock_presenters
-from tickfeeddmr.market_data.api.presenters.common import asset_list_out
 from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
-    AssetOut,
     CursorPage,
     CursorQuery,
     HistoryQuery,
@@ -23,6 +21,7 @@ from tickfeeddmr.market_data.api.schemas.common import (  # noqa: TC001
 from tickfeeddmr.market_data.api.schemas.stock import (  # noqa: TC001
     SecidPath,
     SecidsQuery,
+    StockAssetOut,
     StockCurrentOut,
     StockPricePointOut,
     StockStreamEventOut,
@@ -40,9 +39,9 @@ class StockAssetListController(BaseController):
     """`GET /api/stocks/` — активные акции."""
 
     @modify(tags=_TAGS)
-    async def get(self) -> list[AssetOut]:
+    async def get(self) -> list[StockAssetOut]:
         assets = await stock_queries.list_assets()
-        return asset_list_out(assets)
+        return stock_presenters.asset_list_out(assets)
 
 
 class StockAssetCurrentController(BaseController):

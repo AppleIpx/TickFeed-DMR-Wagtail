@@ -523,7 +523,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/AssetOut"
+                    "$ref": "#/components/schemas/StockAssetOut"
                   },
                   "type": "array"
                 }
@@ -1729,6 +1729,31 @@
         ],
         "title": "SSEvent[tickfeeddmr.market_data.api.schemas.stock.StockTradeEventOut | tickfeeddmr.market_data.api.schemas.common.StreamWarningOut | tickfeeddmr.market_data.api.schemas.common.HeartbeatOut]",
         "description": "Server sent event payload."
+      },
+      "StockAssetOut": {
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "track_trades": {
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "display_name",
+          "is_active",
+          "track_trades"
+        ],
+        "title": "StockAssetOut",
+        "description": "Акция в списке `GET /api/stocks/` — с флагом ленты сделок.\n\n`track_trades` нужен фронту, чтобы решить, звать ли `/trades` и\nподписываться ли на бумагу в SSE-стриме: для бумаг без ленты (см.\n`models/stock.py::StockAsset.track_trades`) обе ручки отвечают 404.\nОстальные ответы домена (`StockCurrentOut` и т.д.) флаг не несут —\nон важен только там, где бумагу выбирают для ленты/потока."
       },
       "StockCurrentOut": {
         "properties": {
