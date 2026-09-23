@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { queryClient } from "./query/queryClient";
 import "./styles/index.css";
 
@@ -15,7 +16,9 @@ if (!container) {
 createRoot(container).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <TooltipProvider>
+        <App />
+      </TooltipProvider>
       {/* Devtools — девзависимость: прод-сборки в скоупе этапа 10 нет. */}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
