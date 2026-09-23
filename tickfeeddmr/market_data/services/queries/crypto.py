@@ -17,7 +17,10 @@ from tickfeeddmr.market_data.services.queries.errors import (
     NoDataYetError,
     StreamAssetsNotFoundError,
 )
-from tickfeeddmr.market_data.services.queries.period import resolve_period
+from tickfeeddmr.market_data.services.queries.period import (
+    resolve_earliest_available,
+    resolve_period,
+)
 from tickfeeddmr.market_data.services.queries.types import (
     IntradayPoint,
     StreamTargets,
@@ -166,13 +169,28 @@ async def get_history(
     date_from: date | None,
     date_to: date | None,
 ) -> Sequence[CryptoDailyCandle]:
-    """Дневные свечи за период (по умолчанию — последний год)."""
+    """Дневные свечи за период.
+
+    По умолчанию (без `date_from`/`date_to`) — либо последние
+    `MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS`, либо, если настройка не
+    задана, вся история актива с самой ранней сохранённой свечи (см.
+    `resolve_period`).
+    """
     asset = await CryptoAsset.objects.filter(symbol=symbol, is_active=True).afirst()
     if asset is None:
         msg = f"Крипто-актив {symbol!r} не найден"
         raise AssetNotFoundError(msg)
 
-    frm, to = resolve_period(date_from=date_from, date_to=date_to)
+    earliest_available = await resolve_earliest_available(
+        date_from=date_from,
+        queryset=CryptoDailyCandle.objects.filter(asset=asset),
+        field_name="date",
+    )
+    frm, to = resolve_period(
+        date_from=date_from,
+        date_to=date_to,
+        earliest_available=earliest_available,
+    )
     return [
         candle
         async for candle in CryptoDailyCandle.objects.filter(

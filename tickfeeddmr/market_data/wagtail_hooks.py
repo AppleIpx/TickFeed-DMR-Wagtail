@@ -1,3 +1,4 @@
+from wagtail.admin.panels import FieldPanel
 from wagtail_modeladmin.options import ModelAdmin, ModelAdminGroup, modeladmin_register
 
 from tickfeeddmr.market_data.models import (
@@ -32,9 +33,18 @@ class FiatCurrencyAdmin(ModelAdmin):
         "iso_code",
         "cbr_id",
         "is_active",
+        "history_backfilled",
     ]
-    list_filter = ["is_active"]
+    list_filter = ["is_active", "history_backfilled"]
     search_fields = ["symbol", "display_name", "iso_code"]
+    panels = [
+        FieldPanel("symbol"),
+        FieldPanel("display_name"),
+        FieldPanel("iso_code"),
+        FieldPanel("cbr_id"),
+        FieldPanel("is_active"),
+        FieldPanel("history_backfilled", read_only=True),
+    ]
 
 
 class CryptoPriceSnapshotAdmin(ModelAdmin):
