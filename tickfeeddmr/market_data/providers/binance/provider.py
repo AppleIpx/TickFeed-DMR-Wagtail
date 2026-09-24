@@ -15,7 +15,7 @@ from tickfeeddmr.market_data.providers.binance.websocket import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Sequence
+    from collections.abc import AsyncIterator, Collection, Sequence
     from datetime import datetime
 
 EXCHANGE = "BINANCE"
@@ -67,9 +67,18 @@ class BinanceProvider(AssetDataProvider):
             if end is not None and cursor >= end:
                 return
 
-    def stream(self, trading_pairs: Sequence[str]) -> AsyncIterator[TradeEvent]:
-        consumer = BinanceTradeStreamConsumer(
+    def trade_stream(
+        self,
+        trading_pairs: Collection[str] = (),
+    ) -> BinanceTradeStreamConsumer:
+        """Управляемый хэндл стрима: набор пар меняется на лету через
+        `update_pairs`, без переподключения. `stream()` ниже — то же самое
+        со статичным набором, для соответствия `AssetDataProvider`.
+        """
+        return BinanceTradeStreamConsumer(
             ws_base_url=self._ws_base_url,
             trading_pairs=trading_pairs,
         )
-        return consumer.stream()
+
+    def stream(self, trading_pairs: Sequence[str]) -> AsyncIterator[TradeEvent]:
+        return self.trade_stream(trading_pairs).stream()

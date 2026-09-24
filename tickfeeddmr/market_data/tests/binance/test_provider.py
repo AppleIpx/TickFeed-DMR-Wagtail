@@ -20,6 +20,9 @@ from tickfeeddmr.market_data.providers.binance.rest import (
     BinanceRestClient,
     next_klines_cursor,
 )
+from tickfeeddmr.market_data.providers.binance.websocket import (
+    BinanceTradeStreamConsumer,
+)
 
 REST_BASE_URL = "https://unused.example"
 WS_BASE_URL = "wss://unused.example"
@@ -161,3 +164,22 @@ async def test_stream_delegates_to_trade_stream_consumer_and_forwards_events() -
         )
 
     assert collected == [event]
+
+
+def test_trade_stream_returns_consumer_with_given_pairs() -> None:
+    provider = _provider(AsyncMock(spec=BinanceRestClient))
+
+    consumer = provider.trade_stream(["ETHUSDT", "BTCUSDT"])
+
+    assert isinstance(consumer, BinanceTradeStreamConsumer)
+    assert consumer.stream_url == (
+        f"{WS_BASE_URL}/stream?streams=btcusdt@aggTrade/ethusdt@aggTrade"
+    )
+
+
+def test_trade_stream_defaults_to_empty_set() -> None:
+    provider = _provider(AsyncMock(spec=BinanceRestClient))
+
+    consumer = provider.trade_stream()
+
+    assert consumer.stream_url == f"{WS_BASE_URL}/stream?streams="
