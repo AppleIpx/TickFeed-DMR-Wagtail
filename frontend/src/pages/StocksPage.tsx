@@ -2,6 +2,14 @@ import { useMemo, useRef } from "react";
 import { useSearchParams } from "react-router";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PeriodToggle } from "@/components/market/PeriodToggle";
@@ -42,19 +50,32 @@ export function StocksPage() {
     [assets.data],
   );
 
-  const requested = parseTickerList(searchParams.get("secids"));
-  const secids = useMemo(() => {
-    const valid = requested.filter((secid) => activeSecids.includes(secid));
+  const isCompare = searchParams.get("compare") === "1";
+
+  const requestedSecid = searchParams.get("secid");
+  const secid =
+    requestedSecid && activeSecids.includes(requestedSecid) ? requestedSecid : activeSecids[0];
+
+  const requestedCompare = parseTickerList(searchParams.get("secids"));
+  const compareSecids = useMemo(() => {
+    const valid = requestedCompare.filter((item) => activeSecids.includes(item));
     if (valid.length > 0) {
       return valid.slice(0, MAX_COMPARE_COUNT);
     }
     return activeSecids.slice(0, DEFAULT_COMPARE_COUNT);
-  }, [requested, activeSecids]);
+  }, [requestedCompare, activeSecids]);
+
+  // Один график/таблица/лента на оба режима: вне сравнения — единственная
+  // выбранная бумага, как на `/crypto`, в сравнении — набор из `TickerPicker`.
+  const secids = useMemo(
+    () => (isCompare ? compareSecids : secid ? [secid] : []),
+    [isCompare, compareSecids, secid],
+  );
 
   // Живая лента/поток — только по бумагам с track_trades; график и
   // котировки работают для любой выбранной бумаги.
   const tradableSecids = useMemo(
-    () => secids.filter((secid) => assets.data?.find((asset) => asset.symbol === secid)?.track_trades),
+    () => secids.filter((item) => assets.data?.find((asset) => asset.symbol === item)?.track_trades),
     [secids, assets.data],
   );
 
@@ -82,21 +103,21 @@ export function StocksPage() {
 
   const series = useMemo<PriceChartSeries[]>(() => {
     if (scale === "intraday") {
-      return secids.map((secid, index) => {
+      return secids.map((item, index) => {
         const points = intradayResults[index]?.data?.points ?? [];
         return {
-          id: secid,
-          label: secid,
+          id: item,
+          label: item,
           points: linearPointsToSeries(points),
           precision: seriesPrecision(points.map((point) => point.price)),
         };
       });
     }
-    return secids.map((secid, index) => {
+    return secids.map((item, index) => {
       const points = historyResults[index]?.data ?? [];
       return {
-        id: secid,
-        label: secid,
+        id: item,
+        label: item,
         points: stockHistoryToSeries(points),
         precision: seriesPrecision(stockClosePrices(points)),
       };
@@ -118,8 +139,25 @@ export function StocksPage() {
     [stream.trades],
   );
 
-  const updateSecids = (next: string[]) => {
+  const updateCompareSecids = (next: string[]) => {
     setSearchParams(withParam(searchParams, "secids", tickerListToParam(next)));
+  };
+
+  const enterCompare = () => {
+    let next = withParam(searchParams, "compare", "1");
+    if (requestedCompare.filter((item) => activeSecids.includes(item)).length === 0 && secid) {
+      next = withParam(next, "secids", tickerListToParam([secid]));
+    }
+    setSearchParams(next);
+  };
+
+  const exitCompare = () => {
+    let next = withParam(searchParams, "compare", null);
+    const primary = compareSecids[0];
+    if (primary) {
+      next = withParam(next, "secid", primary);
+    }
+    setSearchParams(next);
   };
 
   if (assets.isError) {
@@ -132,7 +170,34 @@ export function StocksPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <TickerPicker assets={assets.data ?? []} selected={secids} onChange={updateSecids} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {isCompare ? (
+          <TickerPicker
+            assets={assets.data ?? []}
+            selected={compareSecids}
+            onChange={updateCompareSecids}
+          />
+        ) : (
+          <Select
+            value={secid}
+            onValueChange={(value) => setSearchParams(withParam(searchParams, "secid", value))}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Выберите бумагу" />
+            </SelectTrigger>
+            <SelectContent>
+              {activeSecids.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Button variant="outline" size="sm" onClick={isCompare ? exitCompare : enterCompare}>
+          {isCompare ? "Одна бумага" : "Сравнить"}
+        </Button>
+      </div>
 
       <p className="text-sm text-muted-foreground">
         MOEX, опрос раз в минуту + задержка ISS ~15 минут — см. свежесть в таблице ниже.
