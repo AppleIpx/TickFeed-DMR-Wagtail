@@ -2,14 +2,8 @@ import { useMemo, useRef } from "react";
 import { useSearchParams } from "react-router";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AssetCombobox } from "@/components/market/AssetCombobox";
 import { FreshnessBadge } from "@/components/market/FreshnessBadge";
 import { PeriodToggle } from "@/components/market/PeriodToggle";
 import type { PriceChartHandle } from "@/components/market/PriceChart";
@@ -41,10 +35,11 @@ export function CryptoPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const assets = useCryptoAssets();
 
-  const activeSymbols = useMemo(
-    () => (assets.data ?? []).filter((asset) => asset.is_active).map((asset) => asset.symbol),
+  const activeAssets = useMemo(
+    () => (assets.data ?? []).filter((asset) => asset.is_active),
     [assets.data],
   );
+  const activeSymbols = useMemo(() => activeAssets.map((asset) => asset.symbol), [activeAssets]);
   const requestedSymbol = searchParams.get("symbol");
   const symbol =
     requestedSymbol && activeSymbols.includes(requestedSymbol)
@@ -123,21 +118,12 @@ export function CryptoPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Select
+        <AssetCombobox
+          items={activeAssets}
           value={symbol}
-          onValueChange={(value) => setSearchParams(withParam(searchParams, "symbol", value))}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Выберите пару" />
-          </SelectTrigger>
-          <SelectContent>
-            {activeSymbols.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(value) => setSearchParams(withParam(searchParams, "symbol", value))}
+          placeholder="Выберите пару"
+        />
         {current.data && (
           <FreshnessBadge freshness={current.data.freshness} sourceHint="Binance WebSocket" />
         )}
