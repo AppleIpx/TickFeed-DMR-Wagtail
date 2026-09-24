@@ -3,15 +3,9 @@ import { useSearchParams } from "react-router";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { AssetCombobox } from "@/components/market/AssetCombobox";
 import { PeriodToggle } from "@/components/market/PeriodToggle";
 import type { PriceChartHandle, PriceChartSeries } from "@/components/market/PriceChart";
 import { PriceChart } from "@/components/market/PriceChart";
@@ -45,10 +39,11 @@ export function StocksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const assets = useStockAssets();
 
-  const activeSecids = useMemo(
-    () => (assets.data ?? []).filter((asset) => asset.is_active).map((asset) => asset.symbol),
+  const activeAssets = useMemo(
+    () => (assets.data ?? []).filter((asset) => asset.is_active),
     [assets.data],
   );
+  const activeSecids = useMemo(() => activeAssets.map((asset) => asset.symbol), [activeAssets]);
 
   const isCompare = searchParams.get("compare") === "1";
 
@@ -178,21 +173,12 @@ export function StocksPage() {
             onChange={updateCompareSecids}
           />
         ) : (
-          <Select
+          <AssetCombobox
+            items={activeAssets}
             value={secid}
-            onValueChange={(value) => setSearchParams(withParam(searchParams, "secid", value))}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Выберите бумагу" />
-            </SelectTrigger>
-            <SelectContent>
-              {activeSecids.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(value) => setSearchParams(withParam(searchParams, "secid", value))}
+            placeholder="Выберите бумагу"
+          />
         )}
         <Button variant="outline" size="sm" onClick={isCompare ? exitCompare : enterCompare}>
           {isCompare ? "Одна бумага" : "Сравнить"}
