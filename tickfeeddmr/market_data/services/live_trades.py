@@ -10,7 +10,7 @@ from tickfeeddmr.market_data.services.moex_trade_stream import (
 )
 from tickfeeddmr.market_data.services.stream_reader import (
     LiveStreamSpec,
-    read_live_stream,
+    subscribe,
 )
 from tickfeeddmr.market_data.services.stream_selection import latest
 from tickfeeddmr.market_data.services.stream_settings import validate_sse_settings
@@ -36,13 +36,12 @@ def crypto_trade_stream(
     spec: LiveStreamSpec[TradeEvent, str] = LiveStreamSpec(
         label="SSE-стрим крипто-сделок",
         stream_key=settings.MARKET_DATA_TRADE_STREAM_KEY,
-        accept_raw=lambda fields: fields.get("trading_pair") in wanted,
+        raw_group_key=lambda fields: fields.get("trading_pair"),
         decode=deserialize_trade_event,
-        group_key=attrgetter("trading_pair"),
         order_key=order_key,
         rule=partial(latest, n=settings.MARKET_DATA_SSE_TOP_N, key=order_key),
     )
-    return read_live_stream(spec)
+    return subscribe(spec, wanted)
 
 
 def stock_trade_stream(
@@ -57,10 +56,9 @@ def stock_trade_stream(
     spec: LiveStreamSpec[MoexStreamTrade, str] = LiveStreamSpec(
         label="SSE-стрим сделок акций",
         stream_key=settings.MOEX_TRADE_STREAM_KEY,
-        accept_raw=lambda fields: fields.get("secid") in wanted,
+        raw_group_key=lambda fields: fields.get("secid"),
         decode=deserialize_moex_trade,
-        group_key=attrgetter("secid"),
         order_key=order_key,
         rule=partial(latest, n=settings.MARKET_DATA_SSE_TOP_N, key=order_key),
     )
-    return read_live_stream(spec)
+    return subscribe(spec, wanted)

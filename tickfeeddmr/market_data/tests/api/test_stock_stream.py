@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 from tickfeeddmr.market_data.providers.moex.types import MoexTradeRow
 from tickfeeddmr.market_data.services.moex_trade_stream import serialize_moex_trade
 from tickfeeddmr.market_data.tests.api.sse_client import (
+    next_non_heartbeat_chunk,
     open_sse_stream,
     parse_sse_chunk,
 )
@@ -81,10 +82,9 @@ async def test_happy_path_published_trade_arrives_as_trade_event(
         await redis_client.aclose()
 
     try:
-        second_chunk = await asyncio.wait_for(agen.__anext__(), timeout=5)
+        kind, body = await next_non_heartbeat_chunk(agen)
     finally:
         await agen.aclose()
-    kind, body = parse_sse_chunk(second_chunk)
 
     assert kind == "trade"
     assert body["secid"] == stock_asset.symbol
