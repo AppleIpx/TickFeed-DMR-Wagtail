@@ -12,6 +12,7 @@ from tickfeeddmr.market_data.providers.base import TradeEvent
 from tickfeeddmr.market_data.services.trade_stream import serialize_trade_event
 from tickfeeddmr.market_data.tests.api.sse_client import (
     collect_sse_events,
+    next_non_heartbeat_chunk,
     open_sse_stream,
     parse_sse_chunk,
 )
@@ -109,10 +110,9 @@ async def test_happy_path_published_trade_arrives_as_trade_event(
         await redis_client.aclose()
 
     try:
-        second_chunk = await asyncio.wait_for(agen.__anext__(), timeout=5)
+        kind, body = await next_non_heartbeat_chunk(agen)
     finally:
         await agen.aclose()
-    kind, body = parse_sse_chunk(second_chunk)
 
     assert kind == "trade"
     assert body["symbol"] == crypto_asset.symbol
@@ -172,10 +172,9 @@ async def test_unrequested_symbols_never_reach_the_stream(
         await redis_client.aclose()
 
     try:
-        second_chunk = await asyncio.wait_for(agen.__anext__(), timeout=5)
+        kind, body = await next_non_heartbeat_chunk(agen)
     finally:
         await agen.aclose()
-    kind, body = parse_sse_chunk(second_chunk)
 
     assert kind == "trade"
     assert body["trade_id"] == "wanted-1"

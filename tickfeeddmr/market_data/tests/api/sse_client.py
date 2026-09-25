@@ -5,6 +5,8 @@ import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from django.test import AsyncRequestFactory
     from dmr.streaming.stream import StreamingResponse
     from dmr.test import DMRAsyncClient
@@ -38,6 +40,17 @@ def parse_sse_chunk(chunk: bytes) -> tuple[str | None, dict[str, Any]]:
         msg = f"SSE chunk without a data line: {chunk!r}"
         raise AssertionError(msg)
     return event, json.loads(data)
+
+
+async def next_non_heartbeat_chunk(
+    agen: AsyncIterator[bytes],
+) -> tuple[str | None, dict[str, Any]]:
+    """Пропустить `heartbeat`-и, дождаться первого события другого рода."""
+    async with asyncio.timeout(_DEFAULT_TIMEOUT):
+        while True:
+            kind, body = parse_sse_chunk(await agen.__anext__())
+            if kind != "heartbeat":
+                return kind, body
 
 
 async def collect_sse_events(
