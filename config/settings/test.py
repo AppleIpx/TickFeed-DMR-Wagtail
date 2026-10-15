@@ -36,6 +36,14 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
+# AI
+# ------------------------------------------------------------------------------
+AI_ENABLED = False
+GIGACHAT_CREDENTIALS = ""
+AI_API_KEY = ""
+AI_BASE_URL = ""
+AI_PROXY_URL = ""
+
 # MEDIA
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url

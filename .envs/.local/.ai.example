@@ -1,0 +1,43 @@
+AI_ENABLED=false
+# Модель: <провайдер>:<model_id>. Префиксы: gigachat, custom.
+AI_MODEL=gigachat:GigaChat-2-Max
+
+# GigaChat: Authorization key из личного кабинета (base64 client_id:secret).
+GIGACHAT_CREDENTIALS=
+# Область доступа GigaChat API.
+GIGACHAT_SCOPE=GIGACHAT_API_PERS
+# Корневой сертификат НУЦ Минцифры; по умолчанию лежит в репозитории.
+# Пустое значение не ставить — переопределяйте только путём.
+# GIGACHAT_CA_BUNDLE=/app/tickfeeddmr/ai/certs/russian_trusted_root_ca.pem
+
+# Любой OpenAI-совместимый сервис: AI_MODEL=custom:<model_id>.
+# Примеры AI_BASE_URL: https://openrouter.ai/api/v1, https://api.groq.com/openai/v1,
+# https://generativelanguage.googleapis.com/v1beta/openai, http://host.docker.internal:11434/v1 (Ollama).
+AI_BASE_URL=
+# Ключ сервиса; для локального сервера (Ollama) оставьте пустым.
+AI_API_KEY=
+
+# Прокси только для LLM-клиентов (http/https); глобальный HTTPS_PROXY не используется.
+AI_PROXY_URL=
+# Провайдеры, которые ходят через AI_PROXY_URL (через запятую).
+AI_PROXY_PROVIDERS=custom
+
+# Температура генерации [0, 2].
+AI_TEMPERATURE=0.2
+# Дневные лимиты (по Москве): запросов к модели и токенов.
+AI_DAILY_REQUEST_LIMIT=500
+AI_DAILY_TOKEN_LIMIT=2000000
+# Максимум шагов цикла «модель ↔ инструменты» (>= 2).
+AI_MAX_TOOL_ITERATIONS=6
+# Максимум вызовов инструментов за один шаг.
+AI_MAX_TOOL_CALLS_PER_STEP=4
+# Лимиты истории диалога от клиента.
+AI_MAX_HISTORY_MESSAGES=20
+AI_MAX_MESSAGE_CHARS=4000
+# Максимум строк в результате инструмента.
+AI_TOOL_MAX_ROWS=24
+# Таймаут чтения ответа модели и общий дедлайн чата, секунды.
+AI_READ_TIMEOUT_SECONDS=60
+AI_CHAT_DEADLINE_SECONDS=180
+# Префикс ключа дневного счётчика в Redis.
+AI_QUOTA_KEY_PREFIX=ai:usage
