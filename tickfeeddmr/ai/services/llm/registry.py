@@ -15,7 +15,7 @@ PROVIDERS: Mapping[str, ProviderSpec] = {
         ProviderSpec(
             prefix="gigachat",
             kind="gigachat",
-            base_url="https://gigachat.devices.sberbank.ru/api/v1",
+            base_url="https://api.giga.chat/v1",
             base_url_setting=None,
             api_key_setting="GIGACHAT_CREDENTIALS",
             api_key_required=True,
