@@ -1,7 +1,10 @@
+from collections.abc import Awaitable, Callable
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import msgspec
+
+from tickfeeddmr.ai.services.llm.schemas import ToolCallRequest
 
 Market = Literal["crypto", "stock"]
 Granularity = Literal["year", "half_year", "quarter", "month"]
@@ -172,3 +175,18 @@ class ResolvedAsset(msgspec.Struct, frozen=True):
 class ToolContext(msgspec.Struct, frozen=True):
     today: date
     max_rows: int
+
+
+class ToolDefinition(msgspec.Struct, frozen=True):
+    name: str
+    description: str
+    args_type: type[msgspec.Struct]
+    label: Callable[[Any], str]
+    handler: Callable[[Any, ToolContext], Awaitable[msgspec.Struct]]
+
+
+class PreparedCall(msgspec.Struct, frozen=True):
+    call: ToolCallRequest
+    definition: ToolDefinition
+    args: Any
+    label: str
