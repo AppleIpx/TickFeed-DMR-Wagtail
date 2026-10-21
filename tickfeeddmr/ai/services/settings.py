@@ -92,6 +92,16 @@ def validate_ai_settings() -> None:
         )
         raise ImproperlyConfigured(msg)
 
+    sdk_managed = [
+        p for p in settings.AI_PROXY_PROVIDERS if PROVIDERS[p].kind == "gigachat"
+    ]
+    if sdk_managed:
+        msg = (
+            f"AI_PROXY_PROVIDERS не может содержать {', '.join(sdk_managed)}: "
+            f"клиент SDK GigaChat не использует AI_PROXY_URL"
+        )
+        raise ImproperlyConfigured(msg)
+
     proxy_url = settings.AI_PROXY_URL
     if proxy_url and urlsplit(proxy_url).scheme not in _PROXY_SCHEMES:
         msg = (

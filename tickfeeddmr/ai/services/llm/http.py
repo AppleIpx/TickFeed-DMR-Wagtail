@@ -2,7 +2,7 @@ import functools
 import ssl
 
 import certifi
-import httpx
+import httpx2
 from django.conf import settings
 
 _CONNECT_TIMEOUT_SECONDS = 10.0
@@ -28,14 +28,14 @@ def gigachat_ssl_context() -> ssl.SSLContext:
 def build_http_client(
     prefix: str,
     *,
-    transport: httpx.AsyncBaseTransport | None = None,
-) -> httpx.AsyncClient:
-    """Единственная фабрика HTTP-клиента ИИ."""
-    return httpx.AsyncClient(
+    transport: httpx2.AsyncBaseTransport | None = None,
+) -> httpx2.AsyncClient:
+    """HTTP-клиент провайдеров на SDK `openai`."""
+    return httpx2.AsyncClient(
         trust_env=False,
         proxy=resolve_proxy(prefix),
-        verify=gigachat_ssl_context() if prefix == "gigachat" else True,
-        timeout=httpx.Timeout(
+        verify=True,
+        timeout=httpx2.Timeout(
             connect=_CONNECT_TIMEOUT_SECONDS,
             read=settings.AI_READ_TIMEOUT_SECONDS,
             write=_WRITE_TIMEOUT_SECONDS,

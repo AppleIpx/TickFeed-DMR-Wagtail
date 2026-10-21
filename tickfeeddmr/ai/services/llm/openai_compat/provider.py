@@ -1,17 +1,16 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
 
-import msgspec
+import openai
 from django.conf import settings
+from openai import AsyncOpenAI
 
-from tickfeeddmr.ai.services.llm._transport import one_line, open_stream
 from tickfeeddmr.ai.services.llm.base import LLMProvider
-from tickfeeddmr.ai.services.llm.exceptions import LLMResponseError
-from tickfeeddmr.ai.services.llm.openai_compat.schemas import (
-    Chunk,
-    ToolCallAcc,
-    ToolCallDelta,
-    Usage,
+from tickfeeddmr.ai.services.llm.exceptions import (
+    LLMAuthError,
+    LLMConnectionError,
+    LLMError,
+    LLMResponseError,
 )
 from tickfeeddmr.ai.services.llm.resolve import provider_base_url
 from tickfeeddmr.ai.services.llm.schemas import (
@@ -19,12 +18,15 @@ from tickfeeddmr.ai.services.llm.schemas import (
     ToolCallRequest,
     UsageReport,
 )
-from tickfeeddmr.ai.services.llm.sse import iter_sse_data
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
 
-    import httpx
+    import httpx2
+    from openai.types.chat import (
+        ChatCompletionFunctionToolParam,
+        ChatCompletionMessageParam,
+    )
 
     from tickfeeddmr.ai.services.llm.schemas import (
         ChatMessage,
@@ -34,11 +36,12 @@ if TYPE_CHECKING:
         ToolSpec,
     )
 
-_DONE = "[DONE]"
+_KEYLESS_PLACEHOLDER = "unused"
+_SERVER_ERROR_FROM = 500
 
 
 class OpenAICompatProvider(LLMProvider):
-    """Адаптер OpenAI-совместимого `/chat/completions` (Groq, OpenRouter, Ollama)."""
+    """Адаптер OpenAI-совместимого `/chat/completions` на SDK `openai`."""
 
     def __init__(
         self,
@@ -46,15 +49,18 @@ class OpenAICompatProvider(LLMProvider):
         spec: ProviderSpec,
         model_id: str,
         api_key: str | None,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
     ) -> None:
-        self._url = f"{provider_base_url(spec)}/chat/completions"
         self._model_id = model_id
-        self._api_key = api_key
-        self._client = client
+        self._sdk = AsyncOpenAI(
+            base_url=provider_base_url(spec),
+            api_key=api_key or _KEYLESS_PLACEHOLDER,
+            http_client=client,
+            max_retries=1,
+        )
 
     async def aclose(self) -> None:
-        await self._client.aclose()
+        await self._sdk.close()
 
     async def stream_chat(
         self,
@@ -63,49 +69,57 @@ class OpenAICompatProvider(LLMProvider):
         tools: Sequence[ToolSpec],
         tool_choice: ToolChoice,
     ) -> AsyncIterator[ProviderChunk]:
-        body = self._body(messages, tools, tool_choice)
-        async with open_stream(
-            self._client,
-            self._url,
-            body=body,
-            headers=self._headers(),
-        ) as resp:
-            async for chunk in _read_stream(resp):
-                yield chunk
+        """Текст — сразу, вызовы инструментов и расход — после конца стрима.
 
-    def _headers(self) -> dict[str, str]:
-        headers = {"Accept": "text/event-stream"}
-        if self._api_key:
-            headers["Authorization"] = f"Bearer {self._api_key}"
-        return headers
+        Фрагменты вызовов собирает сам SDK (`completions.stream`); итог берётся из
+        `current_completion_snapshot`, а не `get_final_completion`, который
+        бросает исключение на `finish_reason=length`.
+        """
+        try:
+            async with self._sdk.chat.completions.stream(
+                model=self._model_id,
+                messages=cast(
+                    "list[ChatCompletionMessageParam]",
+                    [_message_to_api(m) for m in messages],
+                ),
+                stream_options={"include_usage": True},
+                temperature=settings.AI_TEMPERATURE,
+                tools=[_tool_to_api(t) for t in tools] if tools else openai.omit,
+                tool_choice=tool_choice if tools else openai.omit,
+            ) as stream:
+                async for event in stream:
+                    if event.type == "content.delta":
+                        yield TextDelta(event.delta)
+                snapshot = stream.current_completion_snapshot
+        except openai.OpenAIError as exc:
+            raise _map_error(exc) from exc
+        except (TypeError, AssertionError) as exc:
+            msg = "Неразбираемый ответ ИИ-провайдера"
+            raise LLMResponseError(msg) from exc
 
-    def _body(
-        self,
-        messages: Sequence[ChatMessage],
-        tools: Sequence[ToolSpec],
-        tool_choice: ToolChoice,
-    ) -> dict[str, Any]:
-        body: dict[str, Any] = {
-            "model": self._model_id,
-            "messages": [_message_to_api(m) for m in messages],
-            "stream": True,
-            "stream_options": {"include_usage": True},
-            "temperature": settings.AI_TEMPERATURE,
-        }
-        if tools:
-            body["tools"] = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": t.name,
-                        "description": t.description,
-                        "parameters": t.parameters,
-                    },
-                }
-                for t in tools
-            ]
-            body["tool_choice"] = tool_choice
-        return body
+        message = snapshot.choices[0].message if snapshot.choices else None
+        for call in (message.tool_calls if message else None) or []:
+            yield ToolCallRequest(
+                id=call.id or f"call_{uuid4().hex[:12]}",
+                name=call.function.name,
+                arguments_json=call.function.arguments or "{}",
+            )
+        if snapshot.usage is not None:
+            yield UsageReport(
+                prompt_tokens=snapshot.usage.prompt_tokens,
+                completion_tokens=snapshot.usage.completion_tokens,
+            )
+
+
+def _tool_to_api(tool: ToolSpec) -> ChatCompletionFunctionToolParam:
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": tool.parameters,
+        },
+    }
 
 
 def _message_to_api(message: ChatMessage) -> dict[str, Any]:
@@ -131,59 +145,23 @@ def _message_to_api(message: ChatMessage) -> dict[str, Any]:
     return {"role": message.role, "content": message.content}
 
 
-def _decode_chunk(data: str) -> Chunk:
-    try:
-        chunk = msgspec.json.decode(data, type=Chunk)
-    except msgspec.DecodeError as exc:
-        msg = f"Неразбираемый фрагмент ответа ИИ-провайдера: {one_line(data)}"
-        raise LLMResponseError(msg) from exc
-    if chunk.error is not None:
-        msg = f"ИИ-провайдер прервал ответ: {one_line(chunk.error.message)}"
-        raise LLMResponseError(msg)
-    return chunk
-
-
-def _accumulate_tool_calls(
-    calls: dict[int, ToolCallAcc],
-    deltas: list[ToolCallDelta],
-) -> None:
-    for position, tc in enumerate(deltas):
-        # Gemini присылает вызовы без `index`.
-        key = tc.index if tc.index is not None else position
-        acc = calls.setdefault(key, ToolCallAcc())
-        acc.id = acc.id or (tc.id or "")
-        if tc.function is not None:
-            acc.name = acc.name or (tc.function.name or "")
-            if tc.function.arguments:
-                acc.parts.append(tc.function.arguments)
-
-
-async def _read_stream(resp: httpx.Response) -> AsyncIterator[ProviderChunk]:
-    """Текст — сразу, вызовы инструментов и расход — после конца стрима."""
-    calls: dict[int, ToolCallAcc] = {}
-    usage: Usage | None = None
-    async for data in iter_sse_data(resp):
-        if data == _DONE:
-            break
-        chunk = _decode_chunk(data)
-        if chunk.usage is not None:
-            usage = chunk.usage
-        for choice in chunk.choices:
-            if choice.delta is None:
-                continue
-            if choice.delta.content:
-                yield TextDelta(choice.delta.content)
-            _accumulate_tool_calls(calls, choice.delta.tool_calls or [])
-
-    for key in sorted(calls):
-        acc = calls[key]
-        yield ToolCallRequest(
-            id=acc.id or f"call_{uuid4().hex[:12]}",
-            name=acc.name,
-            arguments_json="".join(acc.parts) or "{}",
+def _map_error(exc: openai.OpenAIError) -> LLMError:
+    """Ошибка слоя по исключению SDK; текст без тела ответа и заголовков."""
+    if isinstance(exc, openai.AuthenticationError | openai.PermissionDeniedError):
+        return LLMAuthError(
+            f"ИИ-провайдер отклонил ключ доступа: HTTP {exc.status_code}",
         )
-    if usage is not None:
-        yield UsageReport(
-            prompt_tokens=usage.prompt_tokens,
-            completion_tokens=usage.completion_tokens,
+    if isinstance(exc, openai.APIStatusError):
+        if (
+            isinstance(exc, openai.RateLimitError)
+            or exc.status_code >= _SERVER_ERROR_FROM
+        ):
+            return LLMConnectionError(
+                f"ИИ-провайдер недоступен: HTTP {exc.status_code}",
+            )
+        return LLMResponseError(f"ИИ-провайдер вернул HTTP {exc.status_code}")
+    if isinstance(exc, openai.APIConnectionError):
+        return LLMConnectionError(
+            f"Не удалось связаться с ИИ-провайдером: {type(exc).__name__}",
         )
+    return LLMResponseError(f"Ошибка ответа ИИ-провайдера: {type(exc).__name__}")
