@@ -506,7 +506,7 @@ MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS = env.int(
 # AI
 # ------------------------------------------------------------------------------
 AI_ENABLED = env.bool("AI_ENABLED", default=False)
-AI_MODEL = env.str("AI_MODEL", default="gigachat:GigaChat-2-Max")
+AI_MODEL = env.str("AI_MODEL", default="gigachat:GigaChat-3-Ultra")
 
 GIGACHAT_CREDENTIALS = env.str("GIGACHAT_CREDENTIALS", default="")
 GIGACHAT_SCOPE = env.str("GIGACHAT_SCOPE", default="GIGACHAT_API_PERS")
@@ -529,8 +529,8 @@ AI_PROXY_PROVIDERS = env.list(
 
 # Генерация и лимиты.
 AI_TEMPERATURE = env.float("AI_TEMPERATURE", default=0.2)
-AI_DAILY_REQUEST_LIMIT = env.int("AI_DAILY_REQUEST_LIMIT", default=500)
-AI_DAILY_TOKEN_LIMIT = env.int("AI_DAILY_TOKEN_LIMIT", default=2_000_000)
+AI_DAILY_REQUEST_LIMIT = env.int("AI_DAILY_REQUEST_LIMIT", default=100)
+AI_DAILY_TOKEN_LIMIT = env.int("AI_DAILY_TOKEN_LIMIT", default=400_000)
 AI_MAX_TOOL_ITERATIONS = env.int("AI_MAX_TOOL_ITERATIONS", default=6)
 AI_MAX_TOOL_CALLS_PER_STEP = env.int("AI_MAX_TOOL_CALLS_PER_STEP", default=4)
 AI_MAX_HISTORY_MESSAGES = env.int("AI_MAX_HISTORY_MESSAGES", default=20)

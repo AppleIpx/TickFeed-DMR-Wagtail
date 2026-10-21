@@ -1,6 +1,6 @@
 AI_ENABLED=false
 # Модель: <провайдер>:<model_id>. Префиксы: gigachat, custom.
-AI_MODEL=gigachat:GigaChat-2-Max
+AI_MODEL=gigachat:GigaChat-3-Ultra
 
 # GigaChat: Authorization key из личного кабинета (base64 client_id:secret).
 GIGACHAT_CREDENTIALS=
@@ -25,8 +25,8 @@ AI_PROXY_PROVIDERS=custom
 # Температура генерации [0, 2].
 AI_TEMPERATURE=0.2
 # Дневные лимиты (по Москве): запросов к модели и токенов.
-AI_DAILY_REQUEST_LIMIT=500
-AI_DAILY_TOKEN_LIMIT=2000000
+AI_DAILY_REQUEST_LIMIT=100
+AI_DAILY_TOKEN_LIMIT=400000
 # Максимум шагов цикла «модель ↔ инструменты» (>= 2).
 AI_MAX_TOOL_ITERATIONS=6
 # Максимум вызовов инструментов за один шаг.
