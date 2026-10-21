@@ -159,3 +159,16 @@ class BigMovesResult(msgspec.Struct, frozen=True):
 class ToolErrorResult(msgspec.Struct, frozen=True):
     error: str
     hint: str | None = None
+
+
+class ResolvedAsset(msgspec.Struct, frozen=True):
+    market: Market
+    symbol: str
+    name: str
+    asset_id: int
+    trading_pair: str | None
+
+
+class ToolContext(msgspec.Struct, frozen=True):
+    today: date
+    max_rows: int

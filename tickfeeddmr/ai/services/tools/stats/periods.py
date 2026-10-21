@@ -128,7 +128,7 @@ def period_rows(  # noqa: PLR0913
                     trading_days=len(cs),
                     close=price(closes[-1]),
                     return_pct=pct(closes[-1] / base - 1),
-                    max_drawdown_pct=-pct(_max_drawdown(base, closes)) + 0.0,
+                    max_drawdown_pct=-pct(_max_drawdown(base, closes)),
                     volatility_pct=pct_or_none(volatility),
                     volume_change_pct=pct_or_none(volume_change),
                     partial=start < effective_from or end > effective_to,

@@ -1,6 +1,6 @@
 def pct(x: float) -> float:
     """Доля → проценты, округление до двух знаков."""
-    return round(x * 100, 2)
+    return round(x * 100, 2) + 0.0
 
 
 def price(x: float) -> float:
