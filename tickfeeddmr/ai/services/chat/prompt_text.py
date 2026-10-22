@@ -1,0 +1,3 @@
+TODAY_PLACEHOLDER = "{{today}}"
+
+ANALYST_SYSTEM_PROMPT = ""
