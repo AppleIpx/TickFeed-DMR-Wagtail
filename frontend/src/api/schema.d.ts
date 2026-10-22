@@ -228,10 +228,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAistatuscontrollerApiAiStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["postAichatcontrollerApiAiChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AiStatusOut
+         * @description Состояние ИИ-аналитика: включён ли он, лимиты истории и расход за сегодня.
+         */
+        AiStatusOut: {
+            enabled: boolean;
+            model: string | null;
+            max_messages: number;
+            max_message_chars: number;
+            usage: components["schemas"]["AiUsageOut"] | null;
+        };
+        /**
+         * AiUsageOut
+         * @description Расход ИИ за текущие московские сутки и момент сброса счётчика.
+         */
+        AiUsageOut: {
+            requests: number;
+            requests_limit: number;
+            tokens: number;
+            tokens_limit: number;
+            resets_at: string;
+        };
         /**
          * AssetOut
          * @description Общий вид торгуемого актива в ответах API — крипта, фиат или акция.
@@ -240,6 +294,59 @@ export interface components {
             symbol: string;
             display_name: string;
             is_active: boolean;
+        };
+        /**
+         * ChatDoneOut
+         * @description Ответ завершён.
+         */
+        ChatDoneOut: {
+            /** @enum {unknown} */
+            kind: "done";
+            model: string;
+        };
+        /**
+         * ChatErrorOut
+         * @description Ответ прерван; `message` можно показать пользователю.
+         */
+        ChatErrorOut: {
+            /** @enum {unknown} */
+            kind: "error";
+            message: string;
+        };
+        /**
+         * ChatMessageIn
+         * @description Сообщение истории диалога: только реплики пользователя и ассистента.
+         */
+        ChatMessageIn: {
+            /** @enum {unknown} */
+            role: "assistant" | "user";
+            content: string;
+        };
+        /**
+         * ChatRequestIn
+         * @description Тело запроса чата: вся история диалога, последним — вопрос пользователя.
+         */
+        ChatRequestIn: {
+            messages: components["schemas"]["ChatMessageIn"][];
+        };
+        /**
+         * ChatTextDeltaOut
+         * @description Очередной фрагмент текста ответа.
+         */
+        ChatTextDeltaOut: {
+            /** @enum {unknown} */
+            kind: "text_delta";
+            text: string;
+        };
+        /**
+         * ChatToolCallOut
+         * @description Модель обращается к данным системы; `label` — подпись для интерфейса.
+         */
+        ChatToolCallOut: {
+            /** @enum {unknown} */
+            kind: "tool_call";
+            name: string;
+            label: string;
         };
         /**
          * CryptoCurrentOut
@@ -394,6 +501,17 @@ export interface components {
             low: string;
             close: string;
             volume: string;
+        };
+        /**
+         * SSEvent[tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut | tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut | tickfeeddmr.ai.api.schemas.chat.ChatDoneOut | tickfeeddmr.ai.api.schemas.chat.ChatErrorOut]
+         * @description Server sent event payload.
+         */
+        "SSEvent_tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut___tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut___tickfeeddmr.ai.api.schemas.chat.ChatDoneOut___tickfeeddmr.ai.api.schemas.chat.ChatErrorOut_": {
+            data: components["schemas"]["ChatTextDeltaOut"] | components["schemas"]["ChatToolCallOut"] | components["schemas"]["ChatDoneOut"] | components["schemas"]["ChatErrorOut"];
+            event?: string | null;
+            id?: number | string | null;
+            retry?: number | null;
+            comment?: string | null;
         };
         /**
          * SSEvent[tickfeeddmr.market_data.api.schemas.crypto.CryptoTradeEventOut | tickfeeddmr.market_data.api.schemas.common.StreamWarningOut | tickfeeddmr.market_data.api.schemas.common.HeartbeatOut]
@@ -1315,6 +1433,119 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getAistatuscontrollerApiAiStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiStatusOut"];
+                };
+            };
+            /** @description Raised when provided `Accept` header cannot be satisfied */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Raised when returned response does not match the response schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    postAichatcontrollerApiAiChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Тело запроса чата: вся история диалога, последним — вопрос пользователя. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequestIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control": string;
+                    "X-Accel-Buffering": string;
+                    Connection: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SSEvent_tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut___tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut___tickfeeddmr.ai.api.schemas.chat.ChatDoneOut___tickfeeddmr.ai.api.schemas.chat.ChatErrorOut_"];
+                };
+            };
+            /** @description Raised when request components cannot be parsed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Raised when provided `Accept` header cannot be satisfied */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Raised when returned response does not match the response schema */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorModel"];
+                    "application/json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["ErrorModel"];
                     "application/json": components["schemas"]["ErrorModel"];
                 };
             };
