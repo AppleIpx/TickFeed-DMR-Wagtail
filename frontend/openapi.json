@@ -1168,10 +1168,239 @@
         },
         "deprecated": false
       }
+    },
+    "/api/ai/status": {
+      "get": {
+        "tags": [
+          "ИИ-аналитик"
+        ],
+        "operationId": "getAistatuscontrollerApiAiStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiStatusOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Raised when returned response does not match the response schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Raised when provided `Accept` header cannot be satisfied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": [
+          "ИИ-аналитик"
+        ],
+        "operationId": "postAichatcontrollerApiAiChat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequestIn"
+              }
+            }
+          },
+          "description": "Тело запроса чата: вся история диалога, последним — вопрос пользователя.",
+          "required": true
+        },
+        "responses": {
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              },
+              "X-Accel-Buffering": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SSEvent_tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut___tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut___tickfeeddmr.ai.api.schemas.chat.ChatDoneOut___tickfeeddmr.ai.api.schemas.chat.ChatErrorOut_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Raised when request components cannot be parsed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Raised when returned response does not match the response schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Raised when provided `Accept` header cannot be satisfied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false
+      }
     }
   },
   "components": {
     "schemas": {
+      "AiStatusOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_messages": {
+            "type": "integer"
+          },
+          "max_message_chars": {
+            "type": "integer"
+          },
+          "max_history_chars": {
+            "type": "integer"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiUsageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "model",
+          "max_messages",
+          "max_message_chars",
+          "max_history_chars",
+          "usage"
+        ],
+        "title": "AiStatusOut",
+        "description": "Состояние ИИ-аналитика: включён ли он, лимиты истории и расход за сегодня."
+      },
+      "AiUsageOut": {
+        "properties": {
+          "requests": {
+            "type": "integer"
+          },
+          "requests_limit": {
+            "type": "integer"
+          },
+          "tokens": {
+            "type": "integer"
+          },
+          "tokens_limit": {
+            "type": "integer"
+          },
+          "resets_at": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requests",
+          "requests_limit",
+          "tokens",
+          "tokens_limit",
+          "resets_at"
+        ],
+        "title": "AiUsageOut",
+        "description": "Расход ИИ за текущие московские сутки и момент сброса счётчика."
+      },
       "AssetOut": {
         "properties": {
           "symbol": {
@@ -1192,6 +1421,122 @@
         ],
         "title": "AssetOut",
         "description": "Общий вид торгуемого актива в ответах API — крипта, фиат или акция."
+      },
+      "ChatDoneOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "done"
+            ]
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "model"
+        ],
+        "title": "ChatDoneOut",
+        "description": "Ответ завершён."
+      },
+      "ChatErrorOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "ChatErrorOut",
+        "description": "Ответ прерван; `message` можно показать пользователю."
+      },
+      "ChatMessageIn": {
+        "properties": {
+          "role": {
+            "enum": [
+              "assistant",
+              "user"
+            ]
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessageIn",
+        "description": "Сообщение истории диалога: только реплики пользователя и ассистента."
+      },
+      "ChatRequestIn": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageIn"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatRequestIn",
+        "description": "Тело запроса чата: вся история диалога, последним — вопрос пользователя."
+      },
+      "ChatTextDeltaOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "text_delta"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "ChatTextDeltaOut",
+        "description": "Очередной фрагмент текста ответа."
+      },
+      "ChatToolCallOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "tool_call"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "label"
+        ],
+        "title": "ChatToolCallOut",
+        "description": "Модель обращается к данным системы; `label` — подпись для интерфейса."
       },
       "CryptoCurrentOut": {
         "properties": {
@@ -1581,6 +1926,84 @@
         ],
         "title": "PricePointOut",
         "description": "Дневная точка истории цены крипто-актива (CryptoDailyCandle).\n\n`close`, не `price`: симметрично `StockPricePointOut`, у которой\nOHLC — не экстремумы сессии (как у `intraday`), а настоящая дневная\nсвеча, то же самое, что и здесь."
+      },
+      "SSEvent_tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut___tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut___tickfeeddmr.ai.api.schemas.chat.ChatDoneOut___tickfeeddmr.ai.api.schemas.chat.ChatErrorOut_": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatTextDeltaOut"
+              },
+              {
+                "$ref": "#/components/schemas/ChatToolCallOut"
+              },
+              {
+                "$ref": "#/components/schemas/ChatDoneOut"
+              },
+              {
+                "$ref": "#/components/schemas/ChatErrorOut"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "text_delta": "#/components/schemas/ChatTextDeltaOut",
+                "tool_call": "#/components/schemas/ChatToolCallOut",
+                "done": "#/components/schemas/ChatDoneOut",
+                "error": "#/components/schemas/ChatErrorOut"
+              }
+            }
+          },
+          "event": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retry": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SSEvent[tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut | tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut | tickfeeddmr.ai.api.schemas.chat.ChatDoneOut | tickfeeddmr.ai.api.schemas.chat.ChatErrorOut]",
+        "description": "Server sent event payload."
       },
       "SSEvent_tickfeeddmr.market_data.api.schemas.crypto.CryptoTradeEventOut___tickfeeddmr.market_data.api.schemas.common.StreamWarningOut___tickfeeddmr.market_data.api.schemas.common.HeartbeatOut_": {
         "properties": {

@@ -38,3 +38,18 @@ export type CryptoTradeEvent = Extract<CryptoStreamEvent, { kind: "trade" }>;
 export type StockTradeEvent = Extract<StockStreamEvent, { kind: "trade" }>;
 export type StreamWarning = Extract<CryptoStreamEvent, { kind: "warning" }>;
 export type Heartbeat = Extract<CryptoStreamEvent, { kind: "heartbeat" }>;
+
+export type AiStatus = Schemas["AiStatusOut"];
+export type AiUsage = Schemas["AiUsageOut"];
+export type ChatRequest = Schemas["ChatRequestIn"];
+export type ChatMessageIn = Schemas["ChatMessageIn"];
+
+type ChatSSEnvelope =
+  Schemas["SSEvent_tickfeeddmr.ai.api.schemas.chat.ChatTextDeltaOut___tickfeeddmr.ai.api.schemas.chat.ChatToolCallOut___tickfeeddmr.ai.api.schemas.chat.ChatDoneOut___tickfeeddmr.ai.api.schemas.chat.ChatErrorOut_"];
+
+export type ChatStreamEvent = ChatSSEnvelope["data"];
+
+export type ChatTextDelta = Extract<ChatStreamEvent, { kind: "text_delta" }>;
+export type ChatToolCall = Extract<ChatStreamEvent, { kind: "tool_call" }>;
+export type ChatDone = Extract<ChatStreamEvent, { kind: "done" }>;
+export type ChatError = Extract<ChatStreamEvent, { kind: "error" }>;

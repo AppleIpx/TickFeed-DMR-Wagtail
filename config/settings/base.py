@@ -115,6 +115,7 @@ LOCAL_APPS = [
     "tickfeeddmr.users",
     "tickfeeddmr.core",
     "tickfeeddmr.market_data",
+    "tickfeeddmr.ai",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -501,6 +502,48 @@ MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS = env.int(
     "MARKET_DATA_HISTORY_DEFAULT_PERIOD_DAYS",
     default=None,
 )
+
+# AI
+# ------------------------------------------------------------------------------
+AI_ENABLED = env.bool("AI_ENABLED", default=False)
+AI_MODEL = env.str("AI_MODEL", default="gigachat:GigaChat-3-Ultra")
+
+GIGACHAT_CREDENTIALS = env.str("GIGACHAT_CREDENTIALS", default="")
+GIGACHAT_SCOPE = env.str("GIGACHAT_SCOPE", default="GIGACHAT_API_PERS")
+GIGACHAT_CA_BUNDLE = env.str(
+    "GIGACHAT_CA_BUNDLE",
+    default=str(APPS_DIR / "ai" / "certs" / "russian_trusted_root_ca.pem"),
+)
+# Любой OpenAI-совместимый сервис (`AI_MODEL=custom:<model_id>`): OpenRouter,
+# Groq, Gemini, DeepSeek, Ollama, vLLM... Ключ нужен хостовым сервисам; для
+# локального сервера (Ollama) он пустой.
+AI_BASE_URL = env.str("AI_BASE_URL", default="")
+AI_API_KEY = env.str("AI_API_KEY", default="")
+
+# Прокси только для LLM-клиентов
+AI_PROXY_URL = env.str("AI_PROXY_URL", default="")
+AI_PROXY_PROVIDERS = env.list(
+    "AI_PROXY_PROVIDERS",
+    default=["custom"],
+)
+
+# Генерация и лимиты.
+AI_TEMPERATURE = env.float("AI_TEMPERATURE", default=0.2)
+AI_DAILY_REQUEST_LIMIT = env.int("AI_DAILY_REQUEST_LIMIT", default=100)
+AI_DAILY_TOKEN_LIMIT = env.int("AI_DAILY_TOKEN_LIMIT", default=400_000)
+AI_MAX_TOOL_ITERATIONS = env.int("AI_MAX_TOOL_ITERATIONS", default=6)
+AI_MAX_TOOL_CALLS_PER_STEP = env.int("AI_MAX_TOOL_CALLS_PER_STEP", default=4)
+AI_MAX_HISTORY_MESSAGES = env.int("AI_MAX_HISTORY_MESSAGES", default=20)
+AI_MAX_MESSAGE_CHARS = env.int("AI_MAX_MESSAGE_CHARS", default=4000)
+AI_MAX_HISTORY_CHARS = env.int("AI_MAX_HISTORY_CHARS", default=12_000)
+AI_STEP_COMPLETION_RESERVE_TOKENS = env.int(
+    "AI_STEP_COMPLETION_RESERVE_TOKENS",
+    default=2000,
+)
+AI_TOOL_MAX_ROWS = env.int("AI_TOOL_MAX_ROWS", default=24)
+AI_READ_TIMEOUT_SECONDS = env.float("AI_READ_TIMEOUT_SECONDS", default=60.0)
+AI_CHAT_DEADLINE_SECONDS = env.float("AI_CHAT_DEADLINE_SECONDS", default=180.0)
+AI_QUOTA_KEY_PREFIX = env.str("AI_QUOTA_KEY_PREFIX", default="ai:usage")
 
 # django-allauth
 # ------------------------------------------------------------------------------

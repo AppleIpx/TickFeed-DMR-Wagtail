@@ -37,4 +37,9 @@ const fiat = {
     [...fiat.all, "history", isoCode, range] as const,
 };
 
-export const queryKeys = { crypto, stocks, fiat };
+const ai = {
+  all: ["ai"] as const,
+  status: () => [...ai.all, "status"] as const,
+};
+
+export const queryKeys = { crypto, stocks, fiat, ai };
