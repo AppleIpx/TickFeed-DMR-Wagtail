@@ -28,5 +28,6 @@ async def status_out() -> AiStatusOut:
         model=settings.AI_MODEL if enabled else None,
         max_messages=settings.AI_MAX_HISTORY_MESSAGES,
         max_message_chars=settings.AI_MAX_MESSAGE_CHARS,
+        max_history_chars=settings.AI_MAX_HISTORY_CHARS,
         usage=await _usage_out() if enabled else None,
     )

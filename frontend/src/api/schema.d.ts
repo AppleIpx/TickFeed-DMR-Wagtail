@@ -273,6 +273,7 @@ export interface components {
             model: string | null;
             max_messages: number;
             max_message_chars: number;
+            max_history_chars: number;
             usage: components["schemas"]["AiUsageOut"] | null;
         };
         /**

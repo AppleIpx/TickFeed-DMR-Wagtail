@@ -31,6 +31,13 @@ def validate_history(messages: Sequence[HistoryMessage]) -> list[ChatMessage]:
                 f"Сообщение №{number} длиннее {settings.AI_MAX_MESSAGE_CHARS} символов"
             )
             raise ChatHistoryError(msg)
+    total_chars = sum(len(m.content) for m in messages)
+    if total_chars > settings.AI_MAX_HISTORY_CHARS:
+        msg = (
+            f"История длиннее {settings.AI_MAX_HISTORY_CHARS} символов "
+            f"({total_chars}); начните новый диалог"
+        )
+        raise ChatHistoryError(msg)
     if messages[-1].role != "user":
         msg = "Последнее сообщение должно быть от пользователя"
         raise ChatHistoryError(msg)

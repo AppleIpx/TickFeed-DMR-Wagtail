@@ -62,11 +62,19 @@ def validate_ai_settings() -> None:
         "AI_MAX_TOOL_CALLS_PER_STEP",
         "AI_MAX_HISTORY_MESSAGES",
         "AI_MAX_MESSAGE_CHARS",
+        "AI_MAX_HISTORY_CHARS",
         "AI_TOOL_MAX_ROWS",
         "AI_READ_TIMEOUT_SECONDS",
         "AI_CHAT_DEADLINE_SECONDS",
     ):
         validate_positive(name, getattr(settings, name))
+
+    if settings.AI_MAX_HISTORY_CHARS < settings.AI_MAX_MESSAGE_CHARS:
+        msg = (
+            f"AI_MAX_HISTORY_CHARS ({settings.AI_MAX_HISTORY_CHARS}) не может быть "
+            f"меньше AI_MAX_MESSAGE_CHARS ({settings.AI_MAX_MESSAGE_CHARS})"
+        )
+        raise ImproperlyConfigured(msg)
 
     if settings.AI_MAX_TOOL_ITERATIONS < _MIN_TOOL_ITERATIONS:
         msg = (

@@ -10,6 +10,7 @@ import { queryKeys } from "@/query/keys";
 export interface ChatLimits {
   maxMessages: number;
   maxMessageChars: number;
+  maxHistoryChars: number;
 }
 
 const NETWORK_ERROR_MESSAGE = "Не удалось связаться с сервером";
@@ -18,7 +19,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-export function useChat({ maxMessages, maxMessageChars }: ChatLimits) {
+export function useChat({ maxMessages, maxMessageChars, maxHistoryChars }: ChatLimits) {
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
   const controllerRef = useRef<AbortController | null>(null);
@@ -42,7 +43,9 @@ export function useChat({ maxMessages, maxMessageChars }: ChatLimits) {
         .map((entry) => ({ role: entry.role as ChatMessageIn["role"], content: entry.content }));
       history.push({ role: "user", content });
       const trimmed = history.slice(-maxMessages);
-      while (trimmed.length > 0 && trimmed[0]?.role !== "user") {
+      let totalChars = trimmed.reduce((sum, message) => sum + message.content.length, 0);
+      while (trimmed.length > 1 && (totalChars > maxHistoryChars || trimmed[0]?.role !== "user")) {
+        totalChars -= trimmed[0]?.content.length ?? 0;
         trimmed.shift();
       }
 
@@ -82,7 +85,7 @@ export function useChat({ maxMessages, maxMessageChars }: ChatLimits) {
         refreshStatus();
       });
     },
-    [state.entries, state.isStreaming, maxMessages, maxMessageChars, refreshStatus],
+    [state.entries, state.isStreaming, maxMessages, maxMessageChars, maxHistoryChars, refreshStatus],
   );
 
   const stop = useCallback(() => {

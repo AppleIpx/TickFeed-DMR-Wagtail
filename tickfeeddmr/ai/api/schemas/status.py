@@ -20,4 +20,5 @@ class AiStatusOut(msgspec.Struct, frozen=True):
     model: str | None
     max_messages: int
     max_message_chars: int
+    max_history_chars: int
     usage: AiUsageOut | None

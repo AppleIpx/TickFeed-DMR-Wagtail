@@ -1346,6 +1346,9 @@
           "max_message_chars": {
             "type": "integer"
           },
+          "max_history_chars": {
+            "type": "integer"
+          },
           "usage": {
             "anyOf": [
               {
@@ -1363,6 +1366,7 @@
           "model",
           "max_messages",
           "max_message_chars",
+          "max_history_chars",
           "usage"
         ],
         "title": "AiStatusOut",
