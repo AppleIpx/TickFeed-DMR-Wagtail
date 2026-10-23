@@ -1,0 +1,272 @@
+[
+ {
+  "iso_code": "AED",
+  "cbr_id": "R01230",
+  "display_name": "Дирхам ОАЭ"
+ },
+ {
+  "iso_code": "AMD",
+  "cbr_id": "R01060",
+  "display_name": "Армянских драмов"
+ },
+ {
+  "iso_code": "AUD",
+  "cbr_id": "R01010",
+  "display_name": "Австралийский доллар"
+ },
+ {
+  "iso_code": "AZN",
+  "cbr_id": "R01020A",
+  "display_name": "Азербайджанский манат"
+ },
+ {
+  "iso_code": "BDT",
+  "cbr_id": "R01685",
+  "display_name": "Так"
+ },
+ {
+  "iso_code": "BHD",
+  "cbr_id": "R01080",
+  "display_name": "Бахрейнский динар"
+ },
+ {
+  "iso_code": "BOB",
+  "cbr_id": "R01105",
+  "display_name": "Боливиано"
+ },
+ {
+  "iso_code": "BRL",
+  "cbr_id": "R01115",
+  "display_name": "Бразильский реал"
+ },
+ {
+  "iso_code": "BYN",
+  "cbr_id": "R01090B",
+  "display_name": "Белорусский рубль"
+ },
+ {
+  "iso_code": "CAD",
+  "cbr_id": "R01350",
+  "display_name": "Канадский доллар"
+ },
+ {
+  "iso_code": "CHF",
+  "cbr_id": "R01775",
+  "display_name": "Швейцарский франк"
+ },
+ {
+  "iso_code": "CNY",
+  "cbr_id": "R01375",
+  "display_name": "Юань"
+ },
+ {
+  "iso_code": "CUP",
+  "cbr_id": "R01395",
+  "display_name": "Кубинских песо"
+ },
+ {
+  "iso_code": "CZK",
+  "cbr_id": "R01760",
+  "display_name": "Чешских крон"
+ },
+ {
+  "iso_code": "DKK",
+  "cbr_id": "R01215",
+  "display_name": "Датская крона"
+ },
+ {
+  "iso_code": "DZD",
+  "cbr_id": "R01030",
+  "display_name": "Алжирских динаров"
+ },
+ {
+  "iso_code": "EGP",
+  "cbr_id": "R01240",
+  "display_name": "Египетских фунтов"
+ },
+ {
+  "iso_code": "ETB",
+  "cbr_id": "R01800",
+  "display_name": "Эфиопских быров"
+ },
+ {
+  "iso_code": "EUR",
+  "cbr_id": "R01239",
+  "display_name": "Евро"
+ },
+ {
+  "iso_code": "GBP",
+  "cbr_id": "R01035",
+  "display_name": "Фунт стерлингов"
+ },
+ {
+  "iso_code": "GEL",
+  "cbr_id": "R01210",
+  "display_name": "Лари"
+ },
+ {
+  "iso_code": "HKD",
+  "cbr_id": "R01200",
+  "display_name": "Гонконгский доллар"
+ },
+ {
+  "iso_code": "HUF",
+  "cbr_id": "R01135",
+  "display_name": "Форинтов"
+ },
+ {
+  "iso_code": "IDR",
+  "cbr_id": "R01280",
+  "display_name": "Рупий"
+ },
+ {
+  "iso_code": "INR",
+  "cbr_id": "R01270",
+  "display_name": "Индийских рупий"
+ },
+ {
+  "iso_code": "IRR",
+  "cbr_id": "R01300",
+  "display_name": "Иранских риалов"
+ },
+ {
+  "iso_code": "JPY",
+  "cbr_id": "R01820",
+  "display_name": "Иен"
+ },
+ {
+  "iso_code": "KGS",
+  "cbr_id": "R01370",
+  "display_name": "Сомов"
+ },
+ {
+  "iso_code": "KRW",
+  "cbr_id": "R01815",
+  "display_name": "Вон"
+ },
+ {
+  "iso_code": "KZT",
+  "cbr_id": "R01335",
+  "display_name": "Тенге"
+ },
+ {
+  "iso_code": "MDL",
+  "cbr_id": "R01500",
+  "display_name": "Молдавских леев"
+ },
+ {
+  "iso_code": "MMK",
+  "cbr_id": "R02005",
+  "display_name": "Кьятов"
+ },
+ {
+  "iso_code": "MNT",
+  "cbr_id": "R01503",
+  "display_name": "Тугриков"
+ },
+ {
+  "iso_code": "NGN",
+  "cbr_id": "R01520",
+  "display_name": "Найр"
+ },
+ {
+  "iso_code": "NOK",
+  "cbr_id": "R01535",
+  "display_name": "Норвежских крон"
+ },
+ {
+  "iso_code": "NZD",
+  "cbr_id": "R01530",
+  "display_name": "Новозеландский доллар"
+ },
+ {
+  "iso_code": "OMR",
+  "cbr_id": "R01540",
+  "display_name": "Оманский риал"
+ },
+ {
+  "iso_code": "PLN",
+  "cbr_id": "R01565",
+  "display_name": "Злотый"
+ },
+ {
+  "iso_code": "QAR",
+  "cbr_id": "R01355",
+  "display_name": "Катарский риал"
+ },
+ {
+  "iso_code": "RON",
+  "cbr_id": "R01585F",
+  "display_name": "Румынский лей"
+ },
+ {
+  "iso_code": "RSD",
+  "cbr_id": "R01805F",
+  "display_name": "Сербских динаров"
+ },
+ {
+  "iso_code": "SAR",
+  "cbr_id": "R01580",
+  "display_name": "Саудовский риял"
+ },
+ {
+  "iso_code": "SEK",
+  "cbr_id": "R01770",
+  "display_name": "Шведских крон"
+ },
+ {
+  "iso_code": "SGD",
+  "cbr_id": "R01625",
+  "display_name": "Сингапурский доллар"
+ },
+ {
+  "iso_code": "THB",
+  "cbr_id": "R01675",
+  "display_name": "Батов"
+ },
+ {
+  "iso_code": "TJS",
+  "cbr_id": "R01670",
+  "display_name": "Сомони"
+ },
+ {
+  "iso_code": "TMT",
+  "cbr_id": "R01710A",
+  "display_name": "Новый туркменский манат"
+ },
+ {
+  "iso_code": "TRY",
+  "cbr_id": "R01700J",
+  "display_name": "Турецких лир"
+ },
+ {
+  "iso_code": "UAH",
+  "cbr_id": "R01720",
+  "display_name": "Гривен"
+ },
+ {
+  "iso_code": "USD",
+  "cbr_id": "R01235",
+  "display_name": "Доллар США"
+ },
+ {
+  "iso_code": "UZS",
+  "cbr_id": "R01717",
+  "display_name": "Узбекских сумов"
+ },
+ {
+  "iso_code": "VND",
+  "cbr_id": "R01150",
+  "display_name": "Донгов"
+ },
+ {
+  "iso_code": "XDR",
+  "cbr_id": "R01589",
+  "display_name": "СДР (специальные права заимствования)"
+ },
+ {
+  "iso_code": "ZAR",
+  "cbr_id": "R01810",
+  "display_name": "Рэндов"
+ }
+]

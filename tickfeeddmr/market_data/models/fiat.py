@@ -16,8 +16,11 @@ from django.utils.translation import gettext_lazy as _
 from tickfeeddmr.market_data.models.base import AssetBase
 
 CBR_ID_VALIDATOR = RegexValidator(
-    regex=r"^R\d{5}\Z",
-    message=_("Код ЦБ РФ: латинская R и пять цифр, например R01235."),
+    regex=r"^R\d{5}[A-Z]?\Z",
+    message=_(
+        "Код ЦБ РФ: латинская R, пять цифр и необязательная заглавная буква, "
+        "например R01235 или R01020A.",
+    ),
 )
 
 
