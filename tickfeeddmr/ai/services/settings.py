@@ -63,6 +63,7 @@ def validate_ai_settings() -> None:
         "AI_MAX_HISTORY_MESSAGES",
         "AI_MAX_MESSAGE_CHARS",
         "AI_MAX_HISTORY_CHARS",
+        "AI_STEP_COMPLETION_RESERVE_TOKENS",
         "AI_TOOL_MAX_ROWS",
         "AI_READ_TIMEOUT_SECONDS",
         "AI_CHAT_DEADLINE_SECONDS",
@@ -73,6 +74,14 @@ def validate_ai_settings() -> None:
         msg = (
             f"AI_MAX_HISTORY_CHARS ({settings.AI_MAX_HISTORY_CHARS}) не может быть "
             f"меньше AI_MAX_MESSAGE_CHARS ({settings.AI_MAX_MESSAGE_CHARS})"
+        )
+        raise ImproperlyConfigured(msg)
+
+    if settings.AI_STEP_COMPLETION_RESERVE_TOKENS >= settings.AI_DAILY_TOKEN_LIMIT:
+        msg = (
+            f"AI_STEP_COMPLETION_RESERVE_TOKENS "
+            f"({settings.AI_STEP_COMPLETION_RESERVE_TOKENS}) должна быть меньше "
+            f"AI_DAILY_TOKEN_LIMIT ({settings.AI_DAILY_TOKEN_LIMIT})"
         )
         raise ImproperlyConfigured(msg)
 

@@ -35,6 +35,8 @@ AI_MAX_TOOL_CALLS_PER_STEP=4
 AI_MAX_HISTORY_MESSAGES=20
 AI_MAX_MESSAGE_CHARS=4000
 AI_MAX_HISTORY_CHARS=12000
+# Резерв токенов на ответ модели при атомарной проверке дневного лимита (меньше AI_DAILY_TOKEN_LIMIT).
+AI_STEP_COMPLETION_RESERVE_TOKENS=2000
 # Максимум строк в результате инструмента.
 AI_TOOL_MAX_ROWS=24
 # Таймаут чтения ответа модели и общий дедлайн чата, секунды.

@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from django.conf import settings
+
 from tickfeeddmr.ai.services.quota.tokens import estimate_tokens
 
 if TYPE_CHECKING:
@@ -27,6 +29,12 @@ class StepTokens:
 def _message_chars(message: ChatMessage) -> int:
     calls = sum(len(c.arguments_json) + len(c.name) for c in message.tool_calls)
     return len(message.content) + calls
+
+
+def estimate_step_reservation(messages: Sequence[ChatMessage]) -> int:
+    """Резерв токенов шага: оценка входа плюс запас на ответ."""
+    chars = sum(_message_chars(m) for m in messages)
+    return estimate_tokens(chars) + settings.AI_STEP_COMPLETION_RESERVE_TOKENS
 
 
 def step_tokens(messages: Sequence[ChatMessage], result: StepResult) -> StepTokens:

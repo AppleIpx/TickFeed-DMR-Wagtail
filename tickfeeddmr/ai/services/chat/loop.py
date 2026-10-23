@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING, Literal
 
 from django.conf import settings
 
-from tickfeeddmr.ai.services.chat.accounting import step_tokens
+from tickfeeddmr.ai.services.chat.accounting import (
+    estimate_step_reservation,
+    step_tokens,
+)
 from tickfeeddmr.ai.services.chat.events import DoneEvent, ErrorEvent
 from tickfeeddmr.ai.services.chat.prompt import build_system_prompt
 from tickfeeddmr.ai.services.chat.run_stats import RunStats, log_summary
@@ -49,8 +52,7 @@ async def _steps(
 
     for step in range(1, max_steps + 1):
         final = step == max_steps
-        await quota.ensure_available()
-        await quota.count_request()
+        reserved = await quota.reserve_step(estimate_step_reservation(messages))
         stats.steps = step
 
         result: StepResult | None = None
@@ -70,7 +72,7 @@ async def _steps(
 
         tokens = step_tokens(messages, result)
         stats.add_step(tokens)
-        await quota.add_tokens(tokens.total)
+        await quota.settle_step(reserved, tokens.total)
 
         if not result.calls:
             yield DoneEvent(stats.model)
