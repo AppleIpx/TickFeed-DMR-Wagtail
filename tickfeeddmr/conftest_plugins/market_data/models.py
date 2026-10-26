@@ -6,6 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from tickfeeddmr.market_data import tasks
+from tickfeeddmr.market_data.models import CryptoAsset as CryptoAssetModel
+from tickfeeddmr.market_data.models import FiatCurrency as FiatCurrencyModel
+from tickfeeddmr.market_data.models import StockAsset as StockAssetModel
 from tickfeeddmr.market_data.tests.factories import (
     CryptoAssetFactory,
     CryptoPriceSnapshotFactory,
@@ -36,6 +39,14 @@ _DAILY_CANDLES_CATCH_UP_TASK_NAMES = (
     "catch_up_all_stock_daily_candles",
     "catch_up_all_fiat_daily_candles",
 )
+
+
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup, django_db_blocker) -> None:
+    """Чистит справочник из data-миграции: тестам нужны пустые таблицы."""
+    with django_db_blocker.unblock():
+        for model in (CryptoAssetModel, FiatCurrencyModel, StockAssetModel):
+            model.objects.all()._raw_delete("default")  # noqa: SLF001
 
 
 @pytest.fixture(autouse=True)

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ThemeToggle } from "@/components/market/ThemeToggle";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,8 @@ export function AppShell() {
         </a>{" "}
         от TradingView, распространяется по лицензии Apache License 2.0.
       </footer>
+
+      <ChatWidget />
     </div>
   );
 }

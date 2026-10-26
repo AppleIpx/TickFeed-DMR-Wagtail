@@ -19,6 +19,11 @@ class DomainError(Exception):
     status_code: ClassVar[HTTPStatus]
 
 
+async def close_db_connections() -> None:
+    """Закрыть соединения с БД текущего потока, не дожидаясь конца запроса."""
+    await sync_to_async(connections.close_all)()
+
+
 class _DomainErrorHandling:
     """Перевод `DomainError` в ответ — общий для обычных и SSE-контроллеров."""
 
@@ -61,15 +66,5 @@ class BaseSSEController(_DomainErrorHandling, SSEController[MsgspecSerializer]):
 
     @staticmethod
     async def release_db_connections() -> None:
-        """Закрыть соединения с БД, открытые проверкой тикеров в начале ручки.
-
-        Django закрывает соединение по `request_finished`, а для SSE это
-        момент ухода клиента — то есть часы. Без явного закрытия каждый
-        открытый стрим держал бы соединение с Postgres всё время жизни.
-        Именно безусловный `close_all()`, а не `close_old_connections()`: тот
-        закрывает только «просроченные», а в production `CONN_MAX_AGE=60`,
-        так что живое соединение осталось бы открытым. `sync_to_async` идёт в
-        том же потоке, где async ORM держит соединение запроса. После вызова
-        генератор потока не должен обращаться к ORM.
-        """
-        await sync_to_async(connections.close_all)()
+        """Закрыть соединения с БД, открытые проверкой тикеров в начале ручки."""
+        await close_db_connections()

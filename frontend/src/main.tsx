@@ -21,7 +21,7 @@ createRoot(container).render(
         <RouterProvider router={router} />
       </TooltipProvider>
       {/* Devtools — девзависимость: прод-сборки в скоупе этапа 10 нет. */}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
     </QueryClientProvider>
   </StrictMode>,
 );

@@ -1,0 +1,2014 @@
+[
+ {
+  "symbol": "ABIO",
+  "display_name": "iАРТГЕН ао"
+ },
+ {
+  "symbol": "ABRD",
+  "display_name": "АбрауДюрсо"
+ },
+ {
+  "symbol": "AFKS",
+  "display_name": "Система ао"
+ },
+ {
+  "symbol": "AFLT",
+  "display_name": "Аэрофлот"
+ },
+ {
+  "symbol": "AIIQ",
+  "display_name": "AIIQ ETF"
+ },
+ {
+  "symbol": "AKAI",
+  "display_name": "AKAI ETF"
+ },
+ {
+  "symbol": "AKBC",
+  "display_name": "AKBC ETF"
+ },
+ {
+  "symbol": "AKCN",
+  "display_name": "AKCN ETF"
+ },
+ {
+  "symbol": "AKFB",
+  "display_name": "AKFB ETF"
+ },
+ {
+  "symbol": "AKFN",
+  "display_name": "AKFN ETF"
+ },
+ {
+  "symbol": "AKGD",
+  "display_name": "AKGD ETF"
+ },
+ {
+  "symbol": "AKGP",
+  "display_name": "AKGP ETF"
+ },
+ {
+  "symbol": "AKHT",
+  "display_name": "AKHT ETF"
+ },
+ {
+  "symbol": "AKIE",
+  "display_name": "ETF AKIE"
+ },
+ {
+  "symbol": "AKMB",
+  "display_name": "ETF AKMB"
+ },
+ {
+  "symbol": "AKMC",
+  "display_name": "AKMC ETF"
+ },
+ {
+  "symbol": "AKME",
+  "display_name": "ETF AKME"
+ },
+ {
+  "symbol": "AKMM",
+  "display_name": "AKMM ETF"
+ },
+ {
+  "symbol": "AKMP",
+  "display_name": "AKMP ETF"
+ },
+ {
+  "symbol": "AKPP",
+  "display_name": "AKPP ETF"
+ },
+ {
+  "symbol": "AKQU",
+  "display_name": "AKQU ETF"
+ },
+ {
+  "symbol": "AKRN",
+  "display_name": "Акрон"
+ },
+ {
+  "symbol": "AKUP",
+  "display_name": "AKUP ETF"
+ },
+ {
+  "symbol": "ALRS",
+  "display_name": "АЛРОСА ао"
+ },
+ {
+  "symbol": "AMFL",
+  "display_name": "AMFL ETF"
+ },
+ {
+  "symbol": "AMGB",
+  "display_name": "AMGB ETF"
+ },
+ {
+  "symbol": "AMGL",
+  "display_name": "AMGL ETF"
+ },
+ {
+  "symbol": "AMIX",
+  "display_name": "AMIX ETF"
+ },
+ {
+  "symbol": "AMNR",
+  "display_name": "AMNR ETF"
+ },
+ {
+  "symbol": "AMNY",
+  "display_name": "AMNY ETF"
+ },
+ {
+  "symbol": "AMRE",
+  "display_name": "AMRE ETF"
+ },
+ {
+  "symbol": "AMRH",
+  "display_name": "AMRH ETF"
+ },
+ {
+  "symbol": "AMVD",
+  "display_name": "AMVD ETF"
+ },
+ {
+  "symbol": "AMVY",
+  "display_name": "AMVY ETF"
+ },
+ {
+  "symbol": "APRI",
+  "display_name": "АПРИ"
+ },
+ {
+  "symbol": "APTK",
+  "display_name": "Аптеки36и6"
+ },
+ {
+  "symbol": "AQUA",
+  "display_name": "ИНАРКТИКА"
+ },
+ {
+  "symbol": "ARSA",
+  "display_name": "Арсагера"
+ },
+ {
+  "symbol": "ASSB",
+  "display_name": "АстрЭнСб"
+ },
+ {
+  "symbol": "ASTR",
+  "display_name": "iАстра ао"
+ },
+ {
+  "symbol": "AVAN",
+  "display_name": "Авангрд-ао"
+ },
+ {
+  "symbol": "BANE",
+  "display_name": "Башнефт ао"
+ },
+ {
+  "symbol": "BANEP",
+  "display_name": "Башнефт ап"
+ },
+ {
+  "symbol": "BAZA",
+  "display_name": "iБАЗИС"
+ },
+ {
+  "symbol": "BCSB",
+  "display_name": "BCSB ETF"
+ },
+ {
+  "symbol": "BCSD",
+  "display_name": "BCSD ETF"
+ },
+ {
+  "symbol": "BCSE",
+  "display_name": "BCSE ETF"
+ },
+ {
+  "symbol": "BCSG",
+  "display_name": "BCSG ETF"
+ },
+ {
+  "symbol": "BCSR",
+  "display_name": "BCSR ETF"
+ },
+ {
+  "symbol": "BCSW",
+  "display_name": "BCSW ETF"
+ },
+ {
+  "symbol": "BELU",
+  "display_name": "НоваБев ао"
+ },
+ {
+  "symbol": "BISVP",
+  "display_name": "БашИнСв ап"
+ },
+ {
+  "symbol": "BLNG",
+  "display_name": "Белон ао"
+ },
+ {
+  "symbol": "BNDA",
+  "display_name": "BNDA ETF"
+ },
+ {
+  "symbol": "BNDB",
+  "display_name": "BNDB ETF"
+ },
+ {
+  "symbol": "BNDC",
+  "display_name": "BNDC ETF"
+ },
+ {
+  "symbol": "BOND",
+  "display_name": "BOND ETF"
+ },
+ {
+  "symbol": "BRZL",
+  "display_name": "БурЗолото"
+ },
+ {
+  "symbol": "BSPB",
+  "display_name": "БСП ао"
+ },
+ {
+  "symbol": "BSPBP",
+  "display_name": "БСП ап"
+ },
+ {
+  "symbol": "BTBR",
+  "display_name": "iВ2В-РТС"
+ },
+ {
+  "symbol": "CARM",
+  "display_name": "СТГ"
+ },
+ {
+  "symbol": "CASH",
+  "display_name": "CASH ETF"
+ },
+ {
+  "symbol": "CBOM",
+  "display_name": "МКБ ао"
+ },
+ {
+  "symbol": "CHGZ",
+  "display_name": "РН-ЗапСиб"
+ },
+ {
+  "symbol": "CHKZ",
+  "display_name": "ЧКПЗ ао"
+ },
+ {
+  "symbol": "CHMF",
+  "display_name": "СевСт-ао"
+ },
+ {
+  "symbol": "CHMK",
+  "display_name": "ЧМК ао"
+ },
+ {
+  "symbol": "CNRU",
+  "display_name": "iЦиан"
+ },
+ {
+  "symbol": "CNTL",
+  "display_name": "Телеграф"
+ },
+ {
+  "symbol": "CNTLP",
+  "display_name": "Телеграф-п"
+ },
+ {
+  "symbol": "CNYM",
+  "display_name": "CNYM ETF"
+ },
+ {
+  "symbol": "CORP",
+  "display_name": "CORP ETF"
+ },
+ {
+  "symbol": "DATA",
+  "display_name": "iАренадата"
+ },
+ {
+  "symbol": "DELI",
+  "display_name": "iКаршеринг"
+ },
+ {
+  "symbol": "DIAS",
+  "display_name": "iДиасофт"
+ },
+ {
+  "symbol": "DIOD",
+  "display_name": "ЗаводДИОД"
+ },
+ {
+  "symbol": "DIVD",
+  "display_name": "ETF DIVD"
+ },
+ {
+  "symbol": "DOMRF",
+  "display_name": "ДОМ.РФ"
+ },
+ {
+  "symbol": "DVEC",
+  "display_name": "ДЭК ао"
+ },
+ {
+  "symbol": "DZRD",
+  "display_name": "ДонскЗР"
+ },
+ {
+  "symbol": "DZRDP",
+  "display_name": "ДонскЗР п"
+ },
+ {
+  "symbol": "EELT",
+  "display_name": "ЕвроЭлтех"
+ },
+ {
+  "symbol": "ELFV",
+  "display_name": "ЭЛ5Энер ао"
+ },
+ {
+  "symbol": "ELMT",
+  "display_name": "iЭлемент"
+ },
+ {
+  "symbol": "ENPG",
+  "display_name": "ЭН+ГРУП ао"
+ },
+ {
+  "symbol": "EQMX",
+  "display_name": "EQMX ETF"
+ },
+ {
+  "symbol": "ESGE",
+  "display_name": "ESGE ETF"
+ },
+ {
+  "symbol": "ESGR",
+  "display_name": "ESGR ETF"
+ },
+ {
+  "symbol": "ETLN",
+  "display_name": "ЭталонГруп"
+ },
+ {
+  "symbol": "EUTR",
+  "display_name": "ЕвроТранс"
+ },
+ {
+  "symbol": "EVRZ",
+  "display_name": "ЕВРАЗ"
+ },
+ {
+  "symbol": "FEES",
+  "display_name": "Россети"
+ },
+ {
+  "symbol": "FESH",
+  "display_name": "ДВМП ао"
+ },
+ {
+  "symbol": "FINC",
+  "display_name": "FINC ETF"
+ },
+ {
+  "symbol": "FIXR",
+  "display_name": "Фикс Прайс"
+ },
+ {
+  "symbol": "FLOT",
+  "display_name": "Совкомфлот"
+ },
+ {
+  "symbol": "FLOW",
+  "display_name": "FLOW ETF"
+ },
+ {
+  "symbol": "FMBR",
+  "display_name": "FMBR ETF"
+ },
+ {
+  "symbol": "FMMM",
+  "display_name": "FMMM ETF"
+ },
+ {
+  "symbol": "FMSA",
+  "display_name": "FMSA ETF"
+ },
+ {
+  "symbol": "GAZA",
+  "display_name": "ГАЗ ао"
+ },
+ {
+  "symbol": "GAZAP",
+  "display_name": "ГАЗ ап"
+ },
+ {
+  "symbol": "GAZC",
+  "display_name": "ГАЗКОН-ао"
+ },
+ {
+  "symbol": "GAZP",
+  "display_name": "ГАЗПРОМ ао"
+ },
+ {
+  "symbol": "GAZS",
+  "display_name": "ГАЗ-сервис"
+ },
+ {
+  "symbol": "GAZT",
+  "display_name": "ГАЗ-Тек ао"
+ },
+ {
+  "symbol": "GCHE",
+  "display_name": "ЧеркизГ-ао"
+ },
+ {
+  "symbol": "GECO",
+  "display_name": "iГЕНЕТИКО"
+ },
+ {
+  "symbol": "GEMA",
+  "display_name": "iММЦБ ао"
+ },
+ {
+  "symbol": "GEMC",
+  "display_name": "МКПАО ЮМГ"
+ },
+ {
+  "symbol": "GLRX",
+  "display_name": "ГЛОРАКС"
+ },
+ {
+  "symbol": "GMKN",
+  "display_name": "ГМКНорНик"
+ },
+ {
+  "symbol": "GOLD",
+  "display_name": "GOLD ETF"
+ },
+ {
+  "symbol": "GOOD",
+  "display_name": "GOOD ETF"
+ },
+ {
+  "symbol": "GROD",
+  "display_name": "ETF GROD"
+ },
+ {
+  "symbol": "GTRK",
+  "display_name": "ГТМ ао"
+ },
+ {
+  "symbol": "HEAD",
+  "display_name": "Хэдхантер"
+ },
+ {
+  "symbol": "HIMCP",
+  "display_name": "Химпром ап"
+ },
+ {
+  "symbol": "HNFG",
+  "display_name": "ХЭНДЕРСОН"
+ },
+ {
+  "symbol": "HYDR",
+  "display_name": "РусГидро"
+ },
+ {
+  "symbol": "IGST",
+  "display_name": "Ижсталь2ао"
+ },
+ {
+  "symbol": "IGSTP",
+  "display_name": "Ижсталь ап"
+ },
+ {
+  "symbol": "INCB",
+  "display_name": "Инкаб"
+ },
+ {
+  "symbol": "INFL",
+  "display_name": "INFL ETF"
+ },
+ {
+  "symbol": "INGO",
+  "display_name": "INGO ETF"
+ },
+ {
+  "symbol": "IRAO",
+  "display_name": "ИнтерРАОао"
+ },
+ {
+  "symbol": "IRKT",
+  "display_name": "Яковлев-3"
+ },
+ {
+  "symbol": "IVAT",
+  "display_name": "iИВА"
+ },
+ {
+  "symbol": "JNOS",
+  "display_name": "Славн-ЯНОС"
+ },
+ {
+  "symbol": "JNOSP",
+  "display_name": "Слав-ЯНОСп"
+ },
+ {
+  "symbol": "KAZT",
+  "display_name": "Куйбазот"
+ },
+ {
+  "symbol": "KAZTP",
+  "display_name": "Куйбазот-п"
+ },
+ {
+  "symbol": "KBSB",
+  "display_name": "ТНСэКубань"
+ },
+ {
+  "symbol": "KCHE",
+  "display_name": "КамчатЭ ао"
+ },
+ {
+  "symbol": "KCHEP",
+  "display_name": "КамчатЭ ап"
+ },
+ {
+  "symbol": "KFBA",
+  "display_name": "ИНГРАД ао"
+ },
+ {
+  "symbol": "KGKC",
+  "display_name": "КурганГКао"
+ },
+ {
+  "symbol": "KGKCP",
+  "display_name": "КурганГКап"
+ },
+ {
+  "symbol": "KLSB",
+  "display_name": "КалужскСК"
+ },
+ {
+  "symbol": "KLVZ",
+  "display_name": "Кристалл"
+ },
+ {
+  "symbol": "KMAZ",
+  "display_name": "КАМАЗ"
+ },
+ {
+  "symbol": "KMEZ",
+  "display_name": "КМЗ"
+ },
+ {
+  "symbol": "KOGK",
+  "display_name": "КоршГОК ао"
+ },
+ {
+  "symbol": "KRKN",
+  "display_name": "СаратНПЗ"
+ },
+ {
+  "symbol": "KRKNP",
+  "display_name": "СаратНПЗ-п"
+ },
+ {
+  "symbol": "KRKOP",
+  "display_name": "ТКЗКК ап"
+ },
+ {
+  "symbol": "KROT",
+  "display_name": "КрасОкт-ао"
+ },
+ {
+  "symbol": "KROTP",
+  "display_name": "КрасОкт-1п"
+ },
+ {
+  "symbol": "KRSB",
+  "display_name": "Красэсб ао"
+ },
+ {
+  "symbol": "KRSBP",
+  "display_name": "Красэсб ап"
+ },
+ {
+  "symbol": "KUZB",
+  "display_name": "КузнецкийБ"
+ },
+ {
+  "symbol": "KZOS",
+  "display_name": "ОргСинт ао"
+ },
+ {
+  "symbol": "KZOSP",
+  "display_name": "ОргСинт ап"
+ },
+ {
+  "symbol": "LEAS",
+  "display_name": "Европлан"
+ },
+ {
+  "symbol": "LENT",
+  "display_name": "Лента ао"
+ },
+ {
+  "symbol": "LIFE",
+  "display_name": "Фармсинтез"
+ },
+ {
+  "symbol": "LKOH",
+  "display_name": "ЛУКОЙЛ"
+ },
+ {
+  "symbol": "LMBZ",
+  "display_name": "Ламбумиз"
+ },
+ {
+  "symbol": "LPSB",
+  "display_name": "ЛЭСК ао"
+ },
+ {
+  "symbol": "LQDT",
+  "display_name": "LQDT ETF"
+ },
+ {
+  "symbol": "LSNG",
+  "display_name": "РСетиЛЭ"
+ },
+ {
+  "symbol": "LSNGP",
+  "display_name": "РСетиЛЭ-п"
+ },
+ {
+  "symbol": "LSRG",
+  "display_name": "ЛСР ао"
+ },
+ {
+  "symbol": "LVHK",
+  "display_name": "Левенгук"
+ },
+ {
+  "symbol": "MAGE",
+  "display_name": "МагадЭн ао"
+ },
+ {
+  "symbol": "MAGEP",
+  "display_name": "МагадЭн ап"
+ },
+ {
+  "symbol": "MAGN",
+  "display_name": "ММК"
+ },
+ {
+  "symbol": "MBNK",
+  "display_name": "МТС Банк"
+ },
+ {
+  "symbol": "MDMG",
+  "display_name": "MDMG-ао"
+ },
+ {
+  "symbol": "MFGS",
+  "display_name": "Мегион-ао"
+ },
+ {
+  "symbol": "MFGSP",
+  "display_name": "Мегион-ап"
+ },
+ {
+  "symbol": "MGKL",
+  "display_name": "МГКЛ"
+ },
+ {
+  "symbol": "MGNT",
+  "display_name": "Магнит ао"
+ },
+ {
+  "symbol": "MGNZ",
+  "display_name": "СМЗ-ао"
+ },
+ {
+  "symbol": "MGTS",
+  "display_name": "МГТС-5ао"
+ },
+ {
+  "symbol": "MGTSP",
+  "display_name": "МГТС-4ап"
+ },
+ {
+  "symbol": "MISB",
+  "display_name": "ТНСэнМарЭл"
+ },
+ {
+  "symbol": "MISBP",
+  "display_name": "ТНСэМаЭл-п"
+ },
+ {
+  "symbol": "MKBD",
+  "display_name": "MKBD ETF"
+ },
+ {
+  "symbol": "MOEX",
+  "display_name": "МосБиржа"
+ },
+ {
+  "symbol": "MONY",
+  "display_name": "MONY ETF"
+ },
+ {
+  "symbol": "MRKC",
+  "display_name": "РоссЦентр"
+ },
+ {
+  "symbol": "MRKK",
+  "display_name": "Россети СК"
+ },
+ {
+  "symbol": "MRKP",
+  "display_name": "РСетиЦП ао"
+ },
+ {
+  "symbol": "MRKS",
+  "display_name": "РсетСиб ао"
+ },
+ {
+  "symbol": "MRKU",
+  "display_name": "Россети Ур"
+ },
+ {
+  "symbol": "MRKV",
+  "display_name": "РсетВол ао"
+ },
+ {
+  "symbol": "MRKY",
+  "display_name": "РоссЮг ао"
+ },
+ {
+  "symbol": "MRKZ",
+  "display_name": "РСетиСЗ ао"
+ },
+ {
+  "symbol": "MRSB",
+  "display_name": "МордЭнСб"
+ },
+ {
+  "symbol": "MSNG",
+  "display_name": "+МосЭнерго"
+ },
+ {
+  "symbol": "MSRS",
+  "display_name": "РСетиМР ао"
+ },
+ {
+  "symbol": "MSTT",
+  "display_name": "Мостотрест"
+ },
+ {
+  "symbol": "MTLR",
+  "display_name": "Мечел ао"
+ },
+ {
+  "symbol": "MTLRP",
+  "display_name": "Мечел ап"
+ },
+ {
+  "symbol": "MTSS",
+  "display_name": "МТС-ао"
+ },
+ {
+  "symbol": "MVID",
+  "display_name": "М.видео"
+ },
+ {
+  "symbol": "NAUK",
+  "display_name": "iНПОНаука"
+ },
+ {
+  "symbol": "NFAZ",
+  "display_name": "НЕФАЗ"
+ },
+ {
+  "symbol": "NFKL",
+  "display_name": "NFKL ETF"
+ },
+ {
+  "symbol": "NKHP",
+  "display_name": "НКХП ао"
+ },
+ {
+  "symbol": "NKNC",
+  "display_name": "НКНХ ао"
+ },
+ {
+  "symbol": "NKNCP",
+  "display_name": "НКНХ ап"
+ },
+ {
+  "symbol": "NKSH",
+  "display_name": "Нижкамшина"
+ },
+ {
+  "symbol": "NLMK",
+  "display_name": "НЛМК ао"
+ },
+ {
+  "symbol": "NMTP",
+  "display_name": "НМТП ао"
+ },
+ {
+  "symbol": "NNSB",
+  "display_name": "ТНСэнНН ао"
+ },
+ {
+  "symbol": "NNSBP",
+  "display_name": "ТНСэнНН ап"
+ },
+ {
+  "symbol": "NSVZ",
+  "display_name": "iНаукаСвяз"
+ },
+ {
+  "symbol": "NVTK",
+  "display_name": "Новатэк ао"
+ },
+ {
+  "symbol": "OBLG",
+  "display_name": "OBLG ETF"
+ },
+ {
+  "symbol": "OFZS",
+  "display_name": "OFZS ETF"
+ },
+ {
+  "symbol": "OGKB",
+  "display_name": "ОГК-2 ао"
+ },
+ {
+  "symbol": "OKEY",
+  "display_name": "OKEY-гдр"
+ },
+ {
+  "symbol": "OLIQ",
+  "display_name": "OLIQ ETF"
+ },
+ {
+  "symbol": "OMZZP",
+  "display_name": "ОМЗ-ап"
+ },
+ {
+  "symbol": "OZON",
+  "display_name": "Озон"
+ },
+ {
+  "symbol": "OZPH",
+  "display_name": "iОзонФарм"
+ },
+ {
+  "symbol": "PAZA",
+  "display_name": "ПавлАвт ао"
+ },
+ {
+  "symbol": "PHOR",
+  "display_name": "ФосАгро ао"
+ },
+ {
+  "symbol": "PLZL",
+  "display_name": "Полюс"
+ },
+ {
+  "symbol": "PMSB",
+  "display_name": "ПермьЭнСб"
+ },
+ {
+  "symbol": "PMSBP",
+  "display_name": "ПермьЭнС-п"
+ },
+ {
+  "symbol": "POSI",
+  "display_name": "iПозитив"
+ },
+ {
+  "symbol": "PRFN",
+  "display_name": "ТЕПЛАНТ ао"
+ },
+ {
+  "symbol": "PRIE",
+  "display_name": "PRIE ETF"
+ },
+ {
+  "symbol": "PRMB",
+  "display_name": "Приморье"
+ },
+ {
+  "symbol": "PRMD",
+  "display_name": "iПРОМОМЕД"
+ },
+ {
+  "symbol": "PSGM",
+  "display_name": "PSGM ETF"
+ },
+ {
+  "symbol": "PSMM",
+  "display_name": "PSMM ETF"
+ },
+ {
+  "symbol": "PSRB",
+  "display_name": "PSRB ETF"
+ },
+ {
+  "symbol": "PSRE",
+  "display_name": "PSRE ETF"
+ },
+ {
+  "symbol": "RAGR",
+  "display_name": "Русагро"
+ },
+ {
+  "symbol": "RASP",
+  "display_name": "Распадская"
+ },
+ {
+  "symbol": "RBCM",
+  "display_name": "ГК РБК ао"
+ },
+ {
+  "symbol": "RDRB",
+  "display_name": "РДБанк ао"
+ },
+ {
+  "symbol": "RENI",
+  "display_name": "Ренессанс"
+ },
+ {
+  "symbol": "RGSS",
+  "display_name": "РГС СК ао"
+ },
+ {
+  "symbol": "RKKE",
+  "display_name": "ЭнергияРКК"
+ },
+ {
+  "symbol": "RNFT",
+  "display_name": "РуссНфт ао"
+ },
+ {
+  "symbol": "ROBL",
+  "display_name": "ROBL ETF"
+ },
+ {
+  "symbol": "ROLO",
+  "display_name": "Русолово"
+ },
+ {
+  "symbol": "ROSN",
+  "display_name": "Роснефть"
+ },
+ {
+  "symbol": "ROST",
+  "display_name": "РОСИНТЕРао"
+ },
+ {
+  "symbol": "RSHU",
+  "display_name": "RSHU ETF"
+ },
+ {
+  "symbol": "RTGZ",
+  "display_name": "ГР Ростов"
+ },
+ {
+  "symbol": "RTKM",
+  "display_name": "Ростел -ао"
+ },
+ {
+  "symbol": "RTKMP",
+  "display_name": "Ростел -ап"
+ },
+ {
+  "symbol": "RTSB",
+  "display_name": "ТНСэнРст"
+ },
+ {
+  "symbol": "RTSBP",
+  "display_name": "ТНСэнРст-п"
+ },
+ {
+  "symbol": "RU0005418747",
+  "display_name": "ФондПервый"
+ },
+ {
+  "symbol": "RU0006922010",
+  "display_name": "ФондКонс"
+ },
+ {
+  "symbol": "RU0006922044",
+  "display_name": "БКСАкцрост"
+ },
+ {
+  "symbol": "RU000A0HGNG6",
+  "display_name": "АрсагераФА"
+ },
+ {
+  "symbol": "RU000A0HGNH4",
+  "display_name": "ПИФАрсСИ"
+ },
+ {
+  "symbol": "RU000A0JP773",
+  "display_name": "БКС РосАкц"
+ },
+ {
+  "symbol": "RU000A0JP799",
+  "display_name": "БКС РосОбл"
+ },
+ {
+  "symbol": "RU000A0JPMD2",
+  "display_name": "ПИФАрс6.4"
+ },
+ {
+  "symbol": "RU000A0JPZL7",
+  "display_name": "АкБрс-Инв"
+ },
+ {
+  "symbol": "RU000A0JPZP8",
+  "display_name": "АкБрс-Прсп"
+ },
+ {
+  "symbol": "RU000A0JR282",
+  "display_name": "ПИФ Акции"
+ },
+ {
+  "symbol": "RU000A0JR290",
+  "display_name": "ПИФИнМосБр"
+ },
+ {
+  "symbol": "RU000A0JR2A5",
+  "display_name": "ПИФСбалан"
+ },
+ {
+  "symbol": "RU000A0JR2C1",
+  "display_name": "ПИФКазна"
+ },
+ {
+  "symbol": "RU000A0JRHC0",
+  "display_name": "ПИФ АТРИУМ"
+ },
+ {
+  "symbol": "RU000A0JRUQ3",
+  "display_name": "ТКБИП Сбал"
+ },
+ {
+  "symbol": "RU000A0JUR61",
+  "display_name": "ПИФ КОНСЕР"
+ },
+ {
+  "symbol": "RU000A0JUYB1",
+  "display_name": "ЗПИФЛофтин"
+ },
+ {
+  "symbol": "RU000A0JVJ29",
+  "display_name": "БКСДрагМет"
+ },
+ {
+  "symbol": "RU000A0JWCE7",
+  "display_name": "Перловский"
+ },
+ {
+  "symbol": "RU000A0JXP78",
+  "display_name": "ЗПИФДОМ.РФ"
+ },
+ {
+  "symbol": "RU000A0JXWF0",
+  "display_name": "АрсКР1.55"
+ },
+ {
+  "symbol": "RU000A0ZZ5R2",
+  "display_name": "СоврАрБиз3"
+ },
+ {
+  "symbol": "RU000A0ZZCD8",
+  "display_name": "ИПИФМирИнв"
+ },
+ {
+  "symbol": "RU000A0ZZMD7",
+  "display_name": "РСХБ Облиг"
+ },
+ {
+  "symbol": "RU000A0ZZME5",
+  "display_name": "РСХБКазнач"
+ },
+ {
+  "symbol": "RU000A0ZZML0",
+  "display_name": "РСХБ Сбал"
+ },
+ {
+  "symbol": "RU000A0ZZMN6",
+  "display_name": "РСХБ Акции"
+ },
+ {
+  "symbol": "RU000A0ZZVH9",
+  "display_name": "ГПБУАЕОбИП"
+ },
+ {
+  "symbol": "RU000A1000W4",
+  "display_name": "ХаризмИдеи"
+ },
+ {
+  "symbol": "RU000A1000Y0",
+  "display_name": "iпре-АйПиО"
+ },
+ {
+  "symbol": "RU000A100EQ2",
+  "display_name": "БКС РосЕвр"
+ },
+ {
+  "symbol": "RU000A100WZ5",
+  "display_name": "АКЦЕНТ 4"
+ },
+ {
+  "symbol": "RU000A101NK4",
+  "display_name": "ЗПИФ ФПР"
+ },
+ {
+  "symbol": "RU000A101UK9",
+  "display_name": "ОРЕОЛСтрой"
+ },
+ {
+  "symbol": "RU000A101UY0",
+  "display_name": "ОПИФ MM"
+ },
+ {
+  "symbol": "RU000A1022Z1",
+  "display_name": "ПАРУС-ОЗН"
+ },
+ {
+  "symbol": "RU000A1027E5",
+  "display_name": "ЗПИФ ВДО"
+ },
+ {
+  "symbol": "RU000A102N77",
+  "display_name": "ЗПИФРД"
+ },
+ {
+  "symbol": "RU000A102PE0",
+  "display_name": "Фондсуб1"
+ },
+ {
+  "symbol": "RU000A102PF7",
+  "display_name": "Фондсуб2"
+ },
+ {
+  "symbol": "RU000A102PQ4",
+  "display_name": "ФондСубРуб"
+ },
+ {
+  "symbol": "RU000A1034U7",
+  "display_name": "СФНАрБиз7"
+ },
+ {
+  "symbol": "RU000A103B62",
+  "display_name": "РенДохПРО"
+ },
+ {
+  "symbol": "RU000A103HD7",
+  "display_name": "ЗПИФРД2"
+ },
+ {
+  "symbol": "RU000A104172",
+  "display_name": "ПАРУС-СБЛ"
+ },
+ {
+  "symbol": "RU000A104KU3",
+  "display_name": "ПАРУС-НОРД"
+ },
+ {
+  "symbol": "RU000A104M43",
+  "display_name": "ПИФ Аленка"
+ },
+ {
+  "symbol": "RU000A104YX8",
+  "display_name": "ЗПИФКомНед"
+ },
+ {
+  "symbol": "RU000A105153",
+  "display_name": "ХеджФондР5"
+ },
+ {
+  "symbol": "RU000A105328",
+  "display_name": "ПАРУС-ЛОГ"
+ },
+ {
+  "symbol": "RU000A105GY0",
+  "display_name": "ЗПИФПервСп"
+ },
+ {
+  "symbol": "RU000A105R70",
+  "display_name": "Аннапурна"
+ },
+ {
+  "symbol": "RU000A105RJ8",
+  "display_name": "РСХБДолРын"
+ },
+ {
+  "symbol": "RU000A105TU1",
+  "display_name": "БКСКапитал"
+ },
+ {
+  "symbol": "RU000A1068X9",
+  "display_name": "ПАРУС-ДВН"
+ },
+ {
+  "symbol": "RU000A106G80",
+  "display_name": "ТКЗамещОбл"
+ },
+ {
+  "symbol": "RU000A106LB6",
+  "display_name": "ВсеСзПортф"
+ },
+ {
+  "symbol": "RU000A106LC4",
+  "display_name": "МаксВозм"
+ },
+ {
+  "symbol": "RU000A106MG3",
+  "display_name": "ХеджФондД5"
+ },
+ {
+  "symbol": "RU000A106N57",
+  "display_name": "Атон-Об2.0"
+ },
+ {
+  "symbol": "RU000A106SA3",
+  "display_name": "Телескоп А"
+ },
+ {
+  "symbol": "RU000A106XE5",
+  "display_name": "Саммит"
+ },
+ {
+  "symbol": "RU000A1075T2",
+  "display_name": "ЗПИФ Рубин"
+ },
+ {
+  "symbol": "RU000A107860",
+  "display_name": "ХеджФондЮ5"
+ },
+ {
+  "symbol": "RU000A1079J5",
+  "display_name": "ХеджФондД1"
+ },
+ {
+  "symbol": "RU000A107J37",
+  "display_name": "ПИФ СЖН"
+ },
+ {
+  "symbol": "RU000A107RE5",
+  "display_name": "ПИФ Коллек"
+ },
+ {
+  "symbol": "RU000A107U08",
+  "display_name": "РазумИнвес"
+ },
+ {
+  "symbol": "RU000A108751",
+  "display_name": "ПИФПромПар"
+ },
+ {
+  "symbol": "RU000A108KP4",
+  "display_name": "ХеджФондА+"
+ },
+ {
+  "symbol": "RU000A108TT7",
+  "display_name": "БКСДивАкци"
+ },
+ {
+  "symbol": "RU000A108UH0",
+  "display_name": "ПАРУС-КРАС"
+ },
+ {
+  "symbol": "RU000A108VR7",
+  "display_name": "ПАРУС-МАКС"
+ },
+ {
+  "symbol": "RU000A108ZB2",
+  "display_name": "2хОФЗ"
+ },
+ {
+  "symbol": "RU000A1092L4",
+  "display_name": "ПИФАКТИВ20"
+ },
+ {
+  "symbol": "RU000A1095D4",
+  "display_name": "Атон - ОФЗ"
+ },
+ {
+  "symbol": "RU000A1099U0",
+  "display_name": "ЗПИФСовр 9"
+ },
+ {
+  "symbol": "RU000A109G79",
+  "display_name": "ПИФГРИНФЛО"
+ },
+ {
+  "symbol": "RU000A109GQ8",
+  "display_name": "ПИФСкладК2"
+ },
+ {
+  "symbol": "RU000A109NL5",
+  "display_name": "ТЕТИС ИН"
+ },
+ {
+  "symbol": "RU000A109QR5",
+  "display_name": "ААА Золото"
+ },
+ {
+  "symbol": "RU000A109R27",
+  "display_name": "2х Акции"
+ },
+ {
+  "symbol": "RU000A10A489",
+  "display_name": "ПИФПарки2"
+ },
+ {
+  "symbol": "RU000A10AN72",
+  "display_name": "Синара"
+ },
+ {
+  "symbol": "RU000A10AQT4",
+  "display_name": "Достояние"
+ },
+ {
+  "symbol": "RU000A10ATA8",
+  "display_name": "ПИФАКТИВФЛ"
+ },
+ {
+  "symbol": "RU000A10BBS6",
+  "display_name": "ПАРУС-НиНо"
+ },
+ {
+  "symbol": "RU000A10BM31",
+  "display_name": "ВИМ Вал пл"
+ },
+ {
+  "symbol": "RU000A10BQP0",
+  "display_name": "БКС ОФЗ ВД"
+ },
+ {
+  "symbol": "RU000A10BQQ8",
+  "display_name": "ЛАХТА ПАРК"
+ },
+ {
+  "symbol": "RU000A10BT26",
+  "display_name": "ЗПИФА-Т"
+ },
+ {
+  "symbol": "RU000A10BT42",
+  "display_name": "ФЖН-1"
+ },
+ {
+  "symbol": "RU000A10CFM8",
+  "display_name": "ПАРУС-ЗОЛЯ"
+ },
+ {
+  "symbol": "RU000A10CKQ9",
+  "display_name": "АлфаКомНед"
+ },
+ {
+  "symbol": "RU000A10CLY1",
+  "display_name": "ПИФАКТИВ21"
+ },
+ {
+  "symbol": "RU000A10D7W9",
+  "display_name": "СинараВОбл"
+ },
+ {
+  "symbol": "RU000A10D814",
+  "display_name": "ТермКап"
+ },
+ {
+  "symbol": "RU000A10E3R7",
+  "display_name": "ПИФАКТИВ22"
+ },
+ {
+  "symbol": "RU000A10ECF5",
+  "display_name": "Атон-ПфСтр"
+ },
+ {
+  "symbol": "RU000A10ECJ7",
+  "display_name": "Атон Выбор"
+ },
+ {
+  "symbol": "RU000A10EVE8",
+  "display_name": "ПАРУС-МВ"
+ },
+ {
+  "symbol": "RU000A10F439",
+  "display_name": "ПИФПарки3"
+ },
+ {
+  "symbol": "RU000A10FDU9",
+  "display_name": "РСХБ Смарт"
+ },
+ {
+  "symbol": "RU000A10FQ17",
+  "display_name": "БКС ДР ВД"
+ },
+ {
+  "symbol": "RUAL",
+  "display_name": "РУСАЛ ао"
+ },
+ {
+  "symbol": "RUFO",
+  "display_name": "RUFO ETF"
+ },
+ {
+  "symbol": "RUSI",
+  "display_name": "ИКРУСС-ИНВ"
+ },
+ {
+  "symbol": "RZSB",
+  "display_name": "РязЭнСб"
+ },
+ {
+  "symbol": "SAFE",
+  "display_name": "SAFE ETF"
+ },
+ {
+  "symbol": "SAGO",
+  "display_name": "СамарЭн-ао"
+ },
+ {
+  "symbol": "SAGOP",
+  "display_name": "СамарЭн-ап"
+ },
+ {
+  "symbol": "SARE",
+  "display_name": "СаратЭн-ао"
+ },
+ {
+  "symbol": "SAREP",
+  "display_name": "СаратЭн-ап"
+ },
+ {
+  "symbol": "SBBC",
+  "display_name": "SBBC ETF"
+ },
+ {
+  "symbol": "SBBY",
+  "display_name": "SBBY ETF"
+ },
+ {
+  "symbol": "SBCB",
+  "display_name": "SBCB ETF"
+ },
+ {
+  "symbol": "SBCN",
+  "display_name": "SBCN ETF"
+ },
+ {
+  "symbol": "SBDS",
+  "display_name": "SBDS ETF"
+ },
+ {
+  "symbol": "SBER",
+  "display_name": "Сбербанк"
+ },
+ {
+  "symbol": "SBERP",
+  "display_name": "Сбербанк-п"
+ },
+ {
+  "symbol": "SBFR",
+  "display_name": "SBFR ETF"
+ },
+ {
+  "symbol": "SBGB",
+  "display_name": "SBGB ETF"
+ },
+ {
+  "symbol": "SBGD",
+  "display_name": "SBGD ETF"
+ },
+ {
+  "symbol": "SBHI",
+  "display_name": "SBHI ETF"
+ },
+ {
+  "symbol": "SBLB",
+  "display_name": "SBLB ETF"
+ },
+ {
+  "symbol": "SBMM",
+  "display_name": "SBMM ETF"
+ },
+ {
+  "symbol": "SBMX",
+  "display_name": "SBMX ETF"
+ },
+ {
+  "symbol": "SBPS",
+  "display_name": "SBPS ETF"
+ },
+ {
+  "symbol": "SBRB",
+  "display_name": "SBRB ETF"
+ },
+ {
+  "symbol": "SBRI",
+  "display_name": "SBRI ETF"
+ },
+ {
+  "symbol": "SBRS",
+  "display_name": "SBRS ETF"
+ },
+ {
+  "symbol": "SBSC",
+  "display_name": "SBSC ETF"
+ },
+ {
+  "symbol": "SCLI",
+  "display_name": "SCLI ETF"
+ },
+ {
+  "symbol": "SELG",
+  "display_name": "Селигдар"
+ },
+ {
+  "symbol": "SFIN",
+  "display_name": "ЭсЭфАй ао"
+ },
+ {
+  "symbol": "SGZH",
+  "display_name": "Сегежа"
+ },
+ {
+  "symbol": "SIBN",
+  "display_name": "Газпрнефть"
+ },
+ {
+  "symbol": "SILA",
+  "display_name": "SILA ETF"
+ },
+ {
+  "symbol": "SIPO",
+  "display_name": "SIPO ETF"
+ },
+ {
+  "symbol": "SLEN",
+  "display_name": "Сахэнер ао"
+ },
+ {
+  "symbol": "SMCF",
+  "display_name": "SMCF ETF"
+ },
+ {
+  "symbol": "SMLT",
+  "display_name": "Самолет ао"
+ },
+ {
+  "symbol": "SNGS",
+  "display_name": "Сургнфгз"
+ },
+ {
+  "symbol": "SNGSP",
+  "display_name": "Сургнфгз-п"
+ },
+ {
+  "symbol": "SOFL",
+  "display_name": "iСофтлайн"
+ },
+ {
+  "symbol": "SPBE",
+  "display_name": "СПБ Биржа"
+ },
+ {
+  "symbol": "SPRN",
+  "display_name": "SPRN ETF"
+ },
+ {
+  "symbol": "STME",
+  "display_name": "STME ETF"
+ },
+ {
+  "symbol": "STSB",
+  "display_name": "ЕГП"
+ },
+ {
+  "symbol": "STSBP",
+  "display_name": "ЕГП ап"
+ },
+ {
+  "symbol": "SUGB",
+  "display_name": "SUGB ETF"
+ },
+ {
+  "symbol": "SVAV",
+  "display_name": "СОЛЛЕРС"
+ },
+ {
+  "symbol": "SVCB",
+  "display_name": "Совкомбанк"
+ },
+ {
+  "symbol": "SVET",
+  "display_name": "Светофор"
+ },
+ {
+  "symbol": "SVETP",
+  "display_name": "Светофор п"
+ },
+ {
+  "symbol": "T",
+  "display_name": "Т-Техно ао"
+ },
+ {
+  "symbol": "TASB",
+  "display_name": "ТамбЭнСб"
+ },
+ {
+  "symbol": "TASBP",
+  "display_name": "ТамбЭнСб-п"
+ },
+ {
+  "symbol": "TATN",
+  "display_name": "Татнфт 3ао"
+ },
+ {
+  "symbol": "TATNP",
+  "display_name": "Татнфт 3ап"
+ },
+ {
+  "symbol": "TBEU",
+  "display_name": "TBEU ETF"
+ },
+ {
+  "symbol": "TBRU",
+  "display_name": "TBRU ETF"
+ },
+ {
+  "symbol": "TDIV",
+  "display_name": "TDIV ETF"
+ },
+ {
+  "symbol": "TEUR",
+  "display_name": "TEUR ETF"
+ },
+ {
+  "symbol": "TGKA",
+  "display_name": "ТГК-1"
+ },
+ {
+  "symbol": "TGKB",
+  "display_name": "ТГК-2"
+ },
+ {
+  "symbol": "TGKBP",
+  "display_name": "ТГК-2 ап"
+ },
+ {
+  "symbol": "TGKN",
+  "display_name": "ТГК-14"
+ },
+ {
+  "symbol": "TGLD",
+  "display_name": "TGLD ETF"
+ },
+ {
+  "symbol": "TITR",
+  "display_name": "TITR ETF"
+ },
+ {
+  "symbol": "TLCB",
+  "display_name": "TLCB ETF"
+ },
+ {
+  "symbol": "TMON",
+  "display_name": "TMON ETF"
+ },
+ {
+  "symbol": "TMOS",
+  "display_name": "TMOS ETF"
+ },
+ {
+  "symbol": "TNSE",
+  "display_name": "ТНСэнрг ао"
+ },
+ {
+  "symbol": "TOFZ",
+  "display_name": "TOFZ ETF"
+ },
+ {
+  "symbol": "TOPS",
+  "display_name": "TOPS ETF"
+ },
+ {
+  "symbol": "TORS",
+  "display_name": "РСТомск ао"
+ },
+ {
+  "symbol": "TORSP",
+  "display_name": "РСТомск ап"
+ },
+ {
+  "symbol": "TPAY",
+  "display_name": "TPAY ETF"
+ },
+ {
+  "symbol": "TRMK",
+  "display_name": "ТМК ао"
+ },
+ {
+  "symbol": "TRND",
+  "display_name": "TRND ETF"
+ },
+ {
+  "symbol": "TRNFP",
+  "display_name": "Транснф ап"
+ },
+ {
+  "symbol": "TRUR",
+  "display_name": "TRUR ETF"
+ },
+ {
+  "symbol": "TSAV",
+  "display_name": "TSAV ETF"
+ },
+ {
+  "symbol": "TTLK",
+  "display_name": "Таттел. ао"
+ },
+ {
+  "symbol": "TUSD",
+  "display_name": "TUSD ETF"
+ },
+ {
+  "symbol": "TUZA",
+  "display_name": "ТЗА ао"
+ },
+ {
+  "symbol": "UGLD",
+  "display_name": "ЮГК"
+ },
+ {
+  "symbol": "UKUZ",
+  "display_name": "ЮжКузб. ао"
+ },
+ {
+  "symbol": "UNAC",
+  "display_name": "iАвиастКао"
+ },
+ {
+  "symbol": "UNKL",
+  "display_name": "ЮУНК ао"
+ },
+ {
+  "symbol": "UPRO",
+  "display_name": "Юнипро ао"
+ },
+ {
+  "symbol": "URKZ",
+  "display_name": "УрКузница"
+ },
+ {
+  "symbol": "USBN",
+  "display_name": "УралСиб ао"
+ },
+ {
+  "symbol": "UTAR",
+  "display_name": "ЮТэйр ао"
+ },
+ {
+  "symbol": "UWGN",
+  "display_name": "ОВК ао"
+ },
+ {
+  "symbol": "VDOR",
+  "display_name": "VDOR ETF"
+ },
+ {
+  "symbol": "VGSB",
+  "display_name": "ВолгЭнСб"
+ },
+ {
+  "symbol": "VGSBP",
+  "display_name": "ВолгЭнСб-п"
+ },
+ {
+  "symbol": "VJGZ",
+  "display_name": "Варьеган"
+ },
+ {
+  "symbol": "VJGZP",
+  "display_name": "Варьеган-п"
+ },
+ {
+  "symbol": "VKCO",
+  "display_name": "iМКПАО ВК"
+ },
+ {
+  "symbol": "VLHZ",
+  "display_name": "ВХЗ-ао"
+ },
+ {
+  "symbol": "VRSB",
+  "display_name": "ТНСэнВорон"
+ },
+ {
+  "symbol": "VRSBP",
+  "display_name": "ТНСэнВор-п"
+ },
+ {
+  "symbol": "VSEH",
+  "display_name": "ВИ.ру"
+ },
+ {
+  "symbol": "VSMO",
+  "display_name": "ВСМПО-АВСМ"
+ },
+ {
+  "symbol": "VSYD",
+  "display_name": "ВыбСудЗ ао"
+ },
+ {
+  "symbol": "VSYDP",
+  "display_name": "ВыбСудЗ ап"
+ },
+ {
+  "symbol": "VTBR",
+  "display_name": "ВТБ ао"
+ },
+ {
+  "symbol": "WFLO",
+  "display_name": "WFLO ETF"
+ },
+ {
+  "symbol": "WFUT",
+  "display_name": "WFUT ETF"
+ },
+ {
+  "symbol": "WILD",
+  "display_name": "WILD ETF"
+ },
+ {
+  "symbol": "WOFZ",
+  "display_name": "WOFZ ETF"
+ },
+ {
+  "symbol": "WTCM",
+  "display_name": "ЦМТ ао"
+ },
+ {
+  "symbol": "WTCMP",
+  "display_name": "ЦМТ ап"
+ },
+ {
+  "symbol": "WUSD",
+  "display_name": "WUSD ETF"
+ },
+ {
+  "symbol": "WUSH",
+  "display_name": "iВУШХолднг"
+ },
+ {
+  "symbol": "X5",
+  "display_name": "КЦ ИКС 5"
+ },
+ {
+  "symbol": "XACCSK",
+  "display_name": "Акцент 5"
+ },
+ {
+  "symbol": "XAVIUM",
+  "display_name": "Авиум"
+ },
+ {
+  "symbol": "XCREDI",
+  "display_name": "ПИФКредрес"
+ },
+ {
+  "symbol": "XEQTRU",
+  "display_name": "РуАк120/80"
+ },
+ {
+  "symbol": "XFMAGR",
+  "display_name": "ФАлгоритм"
+ },
+ {
+  "symbol": "XFMAGY",
+  "display_name": "ФАлгоритмЮ"
+ },
+ {
+  "symbol": "XFMAIN",
+  "display_name": "ФАбсолютД"
+ },
+ {
+  "symbol": "XFMOMB",
+  "display_name": "ФОмегаБлнс"
+ },
+ {
+  "symbol": "XHEDGE",
+  "display_name": "Тактикреш"
+ },
+ {
+  "symbol": "XHOUSE",
+  "display_name": "ЗПИФ ИНВНД"
+ },
+ {
+  "symbol": "XIPKSV",
+  "display_name": "ИПИФСтабВл"
+ },
+ {
+  "symbol": "XKLUCH",
+  "display_name": "КлючАктив"
+ },
+ {
+  "symbol": "XLAMIX",
+  "display_name": "2xAMIX"
+ },
+ {
+  "symbol": "XNIRUM",
+  "display_name": "Нирум Кап"
+ },
+ {
+  "symbol": "XQUANT",
+  "display_name": "ПИФ КВАНТ"
+ },
+ {
+  "symbol": "XSBORA",
+  "display_name": "Бора-Бора"
+ },
+ {
+  "symbol": "XSECUR",
+  "display_name": "XSECUR"
+ },
+ {
+  "symbol": "XSKLAD",
+  "display_name": "ЗПИФСовр10"
+ },
+ {
+  "symbol": "XTRIUMF",
+  "display_name": "ПАРУС-ТРМ"
+ },
+ {
+  "symbol": "XWIMRD",
+  "display_name": "ВИМ РД 3"
+ },
+ {
+  "symbol": "XXRONE",
+  "display_name": "ОблигацииР"
+ },
+ {
+  "symbol": "XXXXXX",
+  "display_name": "Рентал ПРО"
+ },
+ {
+  "symbol": "YAKG",
+  "display_name": "ЯТЭК ао"
+ },
+ {
+  "symbol": "YDEX",
+  "display_name": "ЯНДЕКС"
+ },
+ {
+  "symbol": "YKEN",
+  "display_name": "Якутскэнрг"
+ },
+ {
+  "symbol": "YKENP",
+  "display_name": "Якутскэн-п"
+ },
+ {
+  "symbol": "YRSB",
+  "display_name": "ТНСэнЯр"
+ },
+ {
+  "symbol": "YRSBP",
+  "display_name": "ТНСэнЯр-п"
+ },
+ {
+  "symbol": "YUAN",
+  "display_name": "YUAN ETF"
+ },
+ {
+  "symbol": "ZAYM",
+  "display_name": "Займер ао"
+ },
+ {
+  "symbol": "ZILL",
+  "display_name": "ЗИЛ ао"
+ },
+ {
+  "symbol": "ZVEZ",
+  "display_name": "ЗВЕЗДА ао"
+ }
+]
