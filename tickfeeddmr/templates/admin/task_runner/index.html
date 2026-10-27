@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Главная</a> › Запуск задач
+  </div>
+{% endblock breadcrumbs %}
+{% block content %}
+  <div id="content-main">
+    <p>
+      Задача ставится в очередь Celery; результата здесь не видно — смотрите логи celeryworker.
+      Расписание и включение правятся в <a href="{{ periodic_tasks_url }}">периодических задачах</a>.
+    </p>
+    <div class="module">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Задача</th>
+            <th scope="col">Расписание</th>
+            <th scope="col">Состояние</th>
+            <th scope="col">Последний запуск</th>
+            <th scope="col">Запуск</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                <strong>{{ row.spec.title }}</strong>
+                <br />
+                <span class="help">{{ row.spec.description }}</span>
+              </td>
+              <td>
+                {% for entry in row.schedule %}<div>{{ entry.schedule }}</div>{% empty %}нет в расписании{% endfor %}
+              </td>
+              <td>
+                {% for entry in row.schedule %}
+                  <div>{% if entry.enabled %}включена{% else %}выключена{% endif %}</div>
+                {% empty %}
+                  —
+                {% endfor %}
+              </td>
+              <td>
+                {% for entry in row.schedule %}
+                  <div>{{ entry.last_run_at|date:"d.m.Y H:i"|default:"—" }}</div>
+                {% empty %}
+                  —
+                {% endfor %}
+              </td>
+              <td>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="task" value="{{ row.name }}" />
+                  {% if row.form %}{{ row.form.asset }}{% endif %}
+                  <input type="submit" value="Запустить" class="default" />
+                </form>
+                {% if row.spec.takes_lock %}
+                  <span class="help">Если прошлый запуск ещё идёт, воркер пропустит этот.</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock content %}
