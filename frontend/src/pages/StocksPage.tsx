@@ -168,7 +168,7 @@ export function StocksPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         {isCompare ? (
           <TickerPicker
-            assets={assets.data ?? []}
+            assets={activeAssets}
             selected={compareSecids}
             onChange={updateCompareSecids}
           />
