@@ -11,6 +11,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from config.api_router import router as api_router
 from config.api_router import schema as api_schema
+from tickfeeddmr.core.task_runner.views import task_runner_view
 
 docs_urlpatterns = [
     path(
@@ -28,6 +29,11 @@ docs_urlpatterns = [
 urlpatterns = [
     path(f"api/{settings.WAGTAIL_ADMIN_URL}", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
+    path(
+        f"api/{settings.ADMIN_URL}tasks/",
+        admin.site.admin_view(task_runner_view),
+        name="task-runner",
+    ),
     path(f"api/{settings.ADMIN_URL}", admin.site.urls),
     *docs_urlpatterns,
     api_router.to_urlpatterns(namespace="api"),
